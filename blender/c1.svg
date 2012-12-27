@@ -1,0 +1,4 @@
+<!--<path d="M 100 350 q 150 -300 300 0" stroke="blue" stroke-width="5" fill="blue" />-->
+<circle cx="100" cy="350" r="3" stroke="red" stroke-width="5" fill="red"/>
+<circle cx="250" cy="200" r="3" stroke="red" stroke-width="5" fill="red"/>
+<circle cx="400" cy="350" r="3" stroke="red" stroke-width="5" fill="red"/>
