@@ -21,6 +21,7 @@
 #include <exception>
 #include <vector>
 #include <array>
+#include "Vec2.h"
 
 class ErrorParsingSVG : public std::exception {
 
@@ -28,7 +29,7 @@ class ErrorParsingSVG : public std::exception {
 
 class SVGParser {
 public:
-	static void GetControlPoints(const char* file_name, std::vector<std::array<double,2>>& control_points);
+	static void GetDataPoints(const char* file_name, std::vector<Vec2>& data_points);
 
 private:
 	SVGParser();

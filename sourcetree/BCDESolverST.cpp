@@ -15,28 +15,14 @@
  -----------------------------------------------------------------------------
  */
 
-#ifndef BEZIERCURVE_H_
-#define BEZIERCURVE_H_
+#include "/home/aran/Projects/libs/pdebc/sourcetree/BCDESolverST.h"
 
-#include <cstdint>
-#include <vector>
-#include "Vec2.h"
+BCDESolverST::BCDESolverST() {
+	// TODO Auto-generated constructor stub
 
-class BezierCurve {
-public:
-	const uint32_t kNumberControlPoints_;
-	std::vector<Vec2> control_points_;
+}
 
-	BezierCurve(const uint32_t n_control_points);
-	virtual ~BezierCurve();
+BCDESolverST::~BCDESolverST() {
+	// TODO Auto-generated destructor stub
+}
 
-	void GetCurveInT(const double parameterization_value, Vec2& out);
-	void CalcError(const std::vector<double>& parameterization_values,
-			const std::vector<Vec2>& data_points, Vec2& error);
-
-private:
-	Vec2 temp_curve_p_;
-
-};
-
-#endif /* BEZIERCURVE_H_ */

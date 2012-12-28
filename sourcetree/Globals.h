@@ -19,6 +19,8 @@
 #define GLOBALS_H_
 #include <functional>
 #include <array>
+#include <math.h>
+#include "Vec2.h"
 
 struct Globals {
 	static constexpr int kMaxControlPoints = 20;
@@ -41,8 +43,35 @@ struct Globals {
 		}
 	}
 
+	static void CalcChordLength(const std::vector<Vec2>& data_points,
+			std::vector<double>& chord_length) {
+
+		using namespace std;
+		const int DP = data_points.size();
+		chord_length.resize(DP);
+		chord_length[0] = 0;
+		chord_length[DP - 1] = 1;
+
+		double td = 0;
+
+		for (int i = 1; i < DP; i++) {
+			double vt = 0;
+			const double vdx = data_points[i].x - data_points[i - 1].x;
+			vt += vdx * vdx;
+			const double vdy = data_points[i].y - data_points[i - 1].y;
+			vt += vdy * vdy;
+			const double d = sqrt(vt);
+			td += d;
+		}
+
+		for (int i = 1; i < DP - 1; i++) {
+			chord_length[i] = chord_length[i] / td;
+		}
+	}
+
 private:
-	Globals() {}
+	Globals() {
+	}
 };
 
 std::array<std::array<double, Globals::kMaxControlPoints>,

@@ -21,6 +21,7 @@
 #include <array>
 
 #include "external/tinyxml2/tinyxml2.h"
+#include "Vec2.h"
 
 SVGParser::SVGParser() {
 	// TODO Auto-generated constructor stub
@@ -31,17 +32,16 @@ SVGParser::~SVGParser() {
 	// TODO Auto-generated destructor stub
 }
 
-void SVGParser::GetControlPoints(const char* file_name,
-		std::vector<std::array<double, 2>>& control_points) {
+void SVGParser::GetDataPoints(const char* file_name,
+		std::vector<Vec2>& data_points) {
 	using namespace tinyxml2;
-
 
 	XMLDocument doc;
 	if (doc.LoadFile(file_name) != XML_SUCCESS) {
 		throw ErrorParsingSVG();
 	}
 
-	control_points.clear();
+	data_points.clear();
 
 	XMLElement* g_element = doc.FirstChildElement("svg")->FirstChildElement(
 			"g");
@@ -55,13 +55,16 @@ void SVGParser::GetControlPoints(const char* file_name,
 			double cy;
 			g_paths->QueryDoubleAttribute("cx", &cx);
 			g_paths->QueryDoubleAttribute("cy", &cy);
-			const char* a_cx = g_paths->Attribute("sodipodi:cx");
-			const char* a_cy = g_paths->Attribute("sodipodi:cy");
-			printf("Path: %s\n%s\n%s\n", a_type, a_cx, a_cy);
-			std::array<double,2> cp;
-			cp[0] = cx;
-			cp[1] = cy;
-			control_points.push_back(cp);
+			/*
+			 const char* a_cx = g_paths->Attribute("sodipodi:cx");
+			 const char* a_cy = g_paths->Attribute("sodipodi:cy");
+			 printf("Path: %s\n%s\n%s\n", a_type, a_cx, a_cy);
+			 *
+			 */
+			Vec2 cp;
+			cp.x = cx;
+			cp.y = cy;
+			data_points.push_back(cp);
 		}
 		g_paths = g_paths->NextSiblingElement("path");
 	}
