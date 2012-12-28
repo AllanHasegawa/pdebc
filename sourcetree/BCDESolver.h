@@ -52,6 +52,8 @@ public:
 			BezierCurve& bezier_curve);
 	virtual ~BCDESolver();
 
+	void SolveOneGeneration();
+
 
 private:
 

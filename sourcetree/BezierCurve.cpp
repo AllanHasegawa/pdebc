@@ -18,7 +18,8 @@
 #include "BezierCurve.h"
 
 BezierCurve::BezierCurve(const uint32_t n_control_points) :
-		kNumberControlPoints_(n_control_points) {
+		kNumberControlPoints_(n_control_points), control_points_(
+				n_control_points) {
 
 }
 

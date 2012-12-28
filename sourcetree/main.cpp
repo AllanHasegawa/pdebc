@@ -18,7 +18,7 @@ int main(void) {
 	printf("Loading XML\n");
 	vector<Vec2> data_points;
 	SVGParser::GetDataPoints("c6.svg", data_points);
-	printf("N CPs: %d\n", (int) data_points.size());
+	printf("N DPs: %d\n", (int) data_points.size());
 
 	vector<double> chord_length;
 	Globals::CalcChordLength(data_points, chord_length);
@@ -26,6 +26,7 @@ int main(void) {
 	BezierCurve bc(5);
 	BCDESolver de(chord_length, data_points, 1, 0.5, 0.8, 128, bc);
 
+	de.SolveOneGeneration();
 
 	return 0;
 }

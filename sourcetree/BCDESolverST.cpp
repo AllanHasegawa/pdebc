@@ -15,14 +15,43 @@
  -----------------------------------------------------------------------------
  */
 
-#include "/home/aran/Projects/libs/pdebc/sourcetree/BCDESolverST.h"
+#include "BCDESolverST.h"
 
-BCDESolverST::BCDESolverST() {
-	// TODO Auto-generated constructor stub
+#include <thread>
+#include <stdio.h>
 
+
+#include "BezierCurve.h"
+#include "Vec2.h"
+
+BCDESolverST::BCDESolverST(const BCDESolver& solver, const int control_point,
+		const int process) :
+		solver_(solver), bezier_curve_(
+				solver.bezier_curve_.kNumberControlPoints_), kCP_(
+				control_point), kProcess_(process) {
+	printf("%d\n", bezier_curve_.control_points_.size());
+	BezierCurve& bc = solver.bezier_curve_;
+	for (int i = 0; i < bc.kNumberControlPoints_; i++) {
+		bezier_curve_.control_points_[i].x = bc.control_points_[i].x;
+		bezier_curve_.control_points_[i].y = bc.control_points_[i].y;
+	}
 }
+
 
 BCDESolverST::~BCDESolverST() {
 	// TODO Auto-generated destructor stub
 }
 
+void BCDESolverST::Start() {
+	printf("Starting Thread\n");
+	thread_ = std::thread(&BCDESolverST::Run, this);
+}
+
+void BCDESolverST::Join() {
+	thread_.join();
+}
+
+
+void BCDESolverST::Run() {
+	printf("Running %d\n", 3);
+}

@@ -22,7 +22,7 @@
 #include <functional>
 
 #include "Vec2.h"
-
+#include "BCDESolverST.h"
 
 BCDESolver::BCDESolver(const std::vector<double>& parameterization_values,
 		const std::vector<Vec2>& data_points, const int n_process,
@@ -30,8 +30,9 @@ BCDESolver::BCDESolver(const std::vector<double>& parameterization_values,
 		BezierCurve& bezier_curve) :
 		bezier_curve_(bezier_curve), data_points_(data_points), parameterization_values_(
 				parameterization_values), n_process_(n_process), kDE_F_(de_f), kDE_CR_(
-				de_cr), kPopulation_(population), generation_(0), parameters_(
-				bezier_curve.kNumberControlPoints_ - 2) {
+				de_cr), kPopulation_(population), generation_(0) {
+
+	parameters_.resize(bezier_curve.kNumberControlPoints_ - 2);
 	for (auto i = parameters_.begin(), e = parameters_.end(); i != e; i++) {
 		i->resize(kPopulation_);
 	}
@@ -41,6 +42,23 @@ BCDESolver::BCDESolver(const std::vector<double>& parameterization_values,
 
 BCDESolver::~BCDESolver() {
 
+}
+
+void BCDESolver::SolveOneGeneration() {
+	using namespace std;
+
+	vector<BCDESolverST> solvers;
+
+	//for (int i = 0; i < n_process_; i++) {
+		BCDESolverST solver(*this, 1, 2);
+		//solvers.push_back(solver);
+		solver.Start();
+	//}
+
+	//for (int i = 0; i < n_process_; i++) {
+		//solvers[i].Join();
+	//}
+		solver.Join();
 }
 
 void BCDESolver::Initialize() {
