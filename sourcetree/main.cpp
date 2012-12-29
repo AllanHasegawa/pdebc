@@ -18,7 +18,7 @@ int main(void) {
 
   //printf("Loading XML\n");
   vector<Vec2> data_points;
-  SVGParser::GetDataPoints("g_p_1", data_points);
+  SVGParser::GetDataPoints("g_p_2.svg", data_points);
   //printf("N DPs: %d\n", (int) data_points.size());
 
   vector<double> chord_length;
@@ -30,20 +30,17 @@ int main(void) {
    for (auto i = data_points.begin(); i != data_points.end(); i++) {
    printf("DP; %f,%f\n", i->x, i->y);
    }*/
-  BezierCurve bc(9);
-  BCDESolver de(chord_length, data_points, 1, 0.8, 0.5, 128, bc);
+  BezierCurve bc(14);
+  BCDESolver de(chord_length, data_points, 8, 0.5, 0.8, 128, bc);
 
   while (de.generation_ < 500) {
     de.SolveOneGeneration();
-    Vec2 error;
-    bc.CalcError(chord_length, data_points, error);
-    //printf("%lf,%lf\n", error.x, error.y);
   }
 
   //bc.PrintControlPoints();
 
-  string save_content = bc.SaveAsSVGPoints(128);
+  //string save_content = bc.SaveAsSVGPoints(128);
 
-  printf("%s\n", save_content.c_str());
+  //printf("%s\n", save_content.c_str());
   return 0;
 }

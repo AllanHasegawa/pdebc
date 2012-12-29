@@ -26,7 +26,7 @@
 #include "Vec2.h"
 #include "BCDESolverST.h"
 
-BCDESolver::BCDESolver(const std::vector<Vec2>& parameterization_values,
+BCDESolver::BCDESolver(const std::vector<double>& parameterization_values,
                        const std::vector<Vec2>& data_points,
                        const int n_process, const double de_f,
                        const double de_cr, const int population,

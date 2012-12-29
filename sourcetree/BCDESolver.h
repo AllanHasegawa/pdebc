@@ -32,7 +32,7 @@ public:
 
 	BezierCurve& bezier_curve_;
 	const std::vector<Vec2>& data_points_;
-	const std::vector<Vec2>& parameterization_values_;
+	const std::vector<double>& parameterization_values_;
 
 	/*
 	 *  [control point][population][dimension]
@@ -47,7 +47,7 @@ public:
 	 */
 	std::vector<Vec2> lowest_error_index_;
 
-	BCDESolver(const std::vector<Vec2>& parameterization_values,
+	BCDESolver(const std::vector<double>& parameterization_values,
 			const std::vector<Vec2>& data_points, const int n_process,
 			const double de_f, const double de_cr, const int population,
 			BezierCurve& bezier_curve);

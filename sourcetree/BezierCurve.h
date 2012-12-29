@@ -31,8 +31,8 @@ public:
 	BezierCurve(const uint32_t n_control_points);
 	virtual ~BezierCurve();
 
-	void GetCurveInT(const Vec2& parameterization_value, Vec2& out);
-	void CalcError(const std::vector<Vec2>& parameterization_values,
+	void GetCurveInT(const double parameterization_value, Vec2& out);
+	void CalcError(const std::vector<double>& parameterization_values,
 			const std::vector<Vec2>& data_points, Vec2& error);
 	void PrintControlPoints();
 	std::string SaveAsSVGPoints(const uint32_t interpolation);

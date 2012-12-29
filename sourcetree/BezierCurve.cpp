@@ -30,33 +30,28 @@ BezierCurve::BezierCurve(const uint32_t n_control_points)
 BezierCurve::~BezierCurve() {
 }
 
-void BezierCurve::GetCurveInT(const Vec2& parameterization_value, Vec2& out) {
+void BezierCurve::GetCurveInT(const double parameterization_value, Vec2& out) {
   int n = kNumberControlPoints_ - 1;
   double Bx = 0;
   double By = 0;
   for (int i = 0; i < kNumberControlPoints_; i++) {
-    double p1x = 1;
-    double p1y = 1;
+    double p1 = 1;
     for (int j = 0; j < i; j++) {
-      p1x *= parameterization_value.x;
-      p1y *= parameterization_value.y;
+      p1 *= parameterization_value;
     }
-    double p2x = 1;
-    double p2y = 1;
+    double p2 = 1;
     for (int j = 0; j < n - i; j++) {
-      p2x *= (1 - parameterization_value.x);
-      p2y *= (1 - parameterization_value.y);
+      p2 *= (1 - parameterization_value);
     }
-    const double bx = Globals::binomial_cache_[n][i] * p1x * p2x;
-    const double by = Globals::binomial_cache_[n][i] * p1y * p2y;
-    Bx += bx * control_points_[i].x;
-    By += bx * control_points_[i].y;
+    const double b = Globals::binomial_cache_[n][i] * p1 * p2;
+    Bx += b * control_points_[i].x;
+    By += b * control_points_[i].y;
   }
   out.x = Bx;
   out.y = By;
 }
 
-void BezierCurve::CalcError(const std::vector<Vec2>& parameterization_values,
+void BezierCurve::CalcError(const std::vector<double>& parameterization_values,
                             const std::vector<Vec2>& data_points, Vec2& error) {
 
   const int DP = data_points.size();
@@ -84,17 +79,12 @@ std::string BezierCurve::SaveAsSVGPoints(const uint32_t interpolation) {
   Vec2 p;
   str += "<path id=\"path_bc\" d=\"";
 
-  Vec2 s;
-  s.x = 0;
-  s.y = 0;
-  GetCurveInT(s, p);
+  GetCurveInT(0, p);
 
   str += "M " + to_string(p.x) + " " + to_string(p.y) + " ";
 
   for (double i = 1.0 / interpolation; i <= 1.0; i += 1.0 / interpolation) {
-    Vec2 t;
-    t.x = t.y = i;
-    GetCurveInT(t, p);
+    GetCurveInT(i, p);
     str += "L " + to_string(p.x) + " " + to_string(p.y) + " ";
   }
   str += "\" />\n";
