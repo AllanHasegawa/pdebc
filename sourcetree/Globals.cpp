@@ -15,31 +15,10 @@
  -----------------------------------------------------------------------------
  */
 
-#ifndef BEZIERCURVE_H_
-#define BEZIERCURVE_H_
+#include "Globals.h"
 
-#include <cstdint>
-#include <vector>
-#include <string>
-#include "Vec2.h"
+std::array<std::array<double, Globals::kMaxControlPoints>,
+		Globals::kMaxControlPoints> Globals::binomial_cache_ = std::array<
+		std::array<double, Globals::kMaxControlPoints>,
+		Globals::kMaxControlPoints>();
 
-class BezierCurve {
-public:
-	const uint32_t kNumberControlPoints_;
-	std::vector<Vec2> control_points_;
-
-	BezierCurve(const uint32_t n_control_points);
-	virtual ~BezierCurve();
-
-	void GetCurveInT(const Vec2& parameterization_value, Vec2& out);
-	void CalcError(const std::vector<Vec2>& parameterization_values,
-			const std::vector<Vec2>& data_points, Vec2& error);
-	void PrintControlPoints();
-	std::string SaveAsSVGPoints(const uint32_t interpolation);
-
-private:
-	Vec2 temp_curve_p_;
-
-};
-
-#endif /* BEZIERCURVE_H_ */

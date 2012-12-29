@@ -28,25 +28,26 @@ public:
 	const double kDE_F_;
 	const double kDE_CR_;
 	const int kPopulation_;
+	const int kNProcess_;
 
 	BezierCurve& bezier_curve_;
 	const std::vector<Vec2>& data_points_;
-	const std::vector<double>& parameterization_values_;
+	const std::vector<Vec2>& parameterization_values_;
 
 	/*
 	 *  [control point][population][dimension]
 	 *  Here, "CP-2" is because we ignore the first and last CP
 	 */
 	std::vector<std::vector<Vec2>> parameters_;
-	//double populationErrors[][][];
+	std::vector<std::vector<Vec2>> population_errors_;
+
 	int generation_;
-	const int n_process_;
 	/*
 	 * [NUMBER PROCESS][DIM]
 	 */
 	std::vector<Vec2> lowest_error_index_;
 
-	BCDESolver(const std::vector<double>& parameterization_values,
+	BCDESolver(const std::vector<Vec2>& parameterization_values,
 			const std::vector<Vec2>& data_points, const int n_process,
 			const double de_f, const double de_cr, const int population,
 			BezierCurve& bezier_curve);

@@ -19,8 +19,8 @@
 #define VEC2_H_
 
 struct Vec2 {
-	double x;
-	double y;
+	double x = 0;
+	double y = 0;
 };
 
 

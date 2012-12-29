@@ -3,6 +3,7 @@ project(pdebc)
 
 set(SRCS
 	main.cpp
+	Globals.cpp
 	BezierCurve.cpp
     SVGParser.cpp
     BCDESolver.cpp

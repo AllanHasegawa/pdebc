@@ -28,12 +28,16 @@ class ErrorParsingSVG : public std::exception {
 };
 
 class SVGParser {
-public:
-	static void GetDataPoints(const char* file_name, std::vector<Vec2>& data_points);
+ public:
+  static void GetDataPoints(const char* file_name,
+                            std::vector<Vec2>& data_points);
 
-private:
-	SVGParser();
-	virtual ~SVGParser();
+ private:
+  SVGParser();
+  virtual ~SVGParser();
+
+  static std::vector<std::string> StringSplit(const std::string& input,
+                                              const std::string& str_regex);
 };
 
 #endif /* SVGPARSER_H_ */

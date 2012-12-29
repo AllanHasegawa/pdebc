@@ -19,31 +19,37 @@
 #define BCDESOLVERST_H_
 
 #include <thread>
+#include <functional>
+#include <random>
 
 #include "BCDESolver.h"
 #include "BezierCurve.h"
 
 class BCDESolverST {
-public:
-	BCDESolverST(const BCDESolver& solver, const int control_point,
-			const int process);
-	virtual ~BCDESolverST();
+ public:
+  BCDESolverST(const int control_point, const int process, BCDESolver& solver);
+  virtual ~BCDESolverST();
+
+  void Start();
+  void Join();
+
+ private:
+  std::thread thread_;
+  BCDESolver& solver_;
+  const int kCP_;
+  const int kProcess_;
+
+  BezierCurve bezier_curve_;
+
+  std::uniform_int_distribution<int> dt_int_pop_interval_;
+  std::uniform_int_distribution<int> dt_int_0_2_;
+  std::uniform_real_distribution<double> dt_real_0_1_;
+  std::mt19937 engine_;  // Mersenne twister MT19937
 
 
-	void Start();
-	void Join();
-
-private:
-	std::thread thread_;
-	const BCDESolver& solver_;
-	const int kCP_;
-	const int kProcess_;
-
-	BezierCurve bezier_curve_;
-
-	void Run();
-	void Mutate(const int actual_index);
-	void Select(const Vec2& trial, const Vec2& error_before, Vec2& error_new);
+  void Run();
+  void Mutate(const int actual_index, Vec2& trials);
+  void Select(const Vec2& trial, const Vec2& error_before, Vec2& error_new);
 };
 
 #endif /* BCDESOLVERST_H_ */
