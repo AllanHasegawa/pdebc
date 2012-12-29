@@ -10,37 +10,92 @@
 #include "BCDESolver.h"
 #include "Vec2.h"
 
-int main(void) {
+void PrintUsage();
+
+int main(int argc, char *argv[]) {
   using namespace std;
 
   Globals::CalcBinomial();
-  //printf("%f\n", Globals::binomial_cache_[11][10]);
 
-  //printf("Loading XML\n");
+  bool verify_input[7];
+  for (int i = 0; i < 7; i++) {
+    verify_input[i] = false;
+  }
+  char* data_points_file;
+  int n_processes;
+  double de_f;
+  double de_cr;
+  int n_generations;
+  int n_control_points;
+  int n_population;
+
+  if (argc < 2) {
+    PrintUsage();
+    return 0;
+  }
+
+  for (int i = 1; i < argc; i++) {
+    if (i + 1 < argc) {
+      if (strcmp(argv[i], "-d") == 0) {
+        data_points_file = argv[i + 1];
+        verify_input[0] = true;
+        i++;
+      } else if (strcmp(argv[i], "-b") == 0) {
+        n_control_points = atoi(argv[i + 1]);
+        i++;
+        verify_input[1] = true;
+      } else if (strcmp(argv[i], "-p") == 0) {
+        n_processes = atoi(argv[i + 1]);
+        i++;
+        verify_input[2] = true;
+      } else if (strcmp(argv[i], "-g") == 0) {
+        n_generations = atoi(argv[i + 1]);
+        i++;
+        verify_input[3] = true;
+      } else if (strcmp(argv[i], "-n") == 0) {
+        n_population = atoi(argv[i + 1]);
+        i++;
+        verify_input[4] = true;
+      } else if (strcmp(argv[i], "-f") == 0) {
+        de_f = atof(argv[i + 1]);
+        i++;
+        verify_input[5] = true;
+      } else if (strcmp(argv[i], "-c") == 0) {
+        de_cr = atof(argv[i + 1]);
+        i++;
+        verify_input[6] = true;
+      }
+    }
+  }
+
+  for (int i = 0; i < 7; i++) {
+    if (!verify_input[i]) {
+      PrintUsage();
+      return 0;
+    }
+  }
+
   vector<Vec2> data_points;
-  SVGParser::GetDataPoints("g_p_2.svg", data_points);
-  //printf("N DPs: %d\n", (int) data_points.size());
+  SVGParser::GetDataPoints(data_points_file, data_points);
 
   vector<double> chord_length;
   Globals::CalcChordLength(data_points, chord_length);
 
-  /*for (auto i = chord_length.begin(); i != chord_length.end(); i++) {
-   printf("%lf\n", *i);
-   }
-   for (auto i = data_points.begin(); i != data_points.end(); i++) {
-   printf("DP; %f,%f\n", i->x, i->y);
-   }*/
-  BezierCurve bc(14);
-  BCDESolver de(chord_length, data_points, 8, 0.5, 0.8, 128, bc);
+  BezierCurve bc(n_control_points);
+  BCDESolver de(chord_length, data_points, n_processes, de_f, de_cr,
+                n_population, bc);
 
-  while (de.generation_ < 500) {
+  while (de.generation_ < n_generations) {
     de.SolveOneGeneration();
   }
 
-  //bc.PrintControlPoints();
+  string save_content = bc.SaveAsSVGPoints(128);
 
-  //string save_content = bc.SaveAsSVGPoints(128);
-
-  //printf("%s\n", save_content.c_str());
+  printf("%s\n", save_content.c_str());
   return 0;
+}
+
+void PrintUsage() {
+  printf(
+      "pdebc -d <data_points_file> -b <number control points> -p <number_processes> -g <number generations> -n <number population> -f <DE_F> -c <DE_CR>\n");
 }
