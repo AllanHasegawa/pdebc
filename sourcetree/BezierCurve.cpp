@@ -24,7 +24,6 @@
 BezierCurve::BezierCurve(const uint32_t n_control_points)
     : kNumberControlPoints_(n_control_points),
       control_points_(n_control_points) {
-
 }
 
 BezierCurve::~BezierCurve() {
@@ -35,17 +34,21 @@ void BezierCurve::GetCurveInT(const double parameterization_value, Vec2& out) {
   double Bx = 0;
   double By = 0;
   for (int i = 0; i < kNumberControlPoints_; i++) {
-    double p1 = 1;
-    for (int j = 0; j < i; j++) {
-      p1 *= parameterization_value;
-    }
-    double p2 = 1;
-    for (int j = 0; j < n - i; j++) {
-      p2 *= (1 - parameterization_value);
-    }
+    const double p1 = pow(parameterization_value, i);
+    const double p2 = pow(1 - parameterization_value, n - i);
+    /*
+     double p1 = 1;
+     for (int j = 0; j < i; j++) {
+     p1 *= parameterization_value;
+     }
+     double p2 = 1;
+     for (int j = 0, je = n - i; j < je; j++) {
+     p2 *= (1 - parameterization_value);
+     }*/
     const double b = Globals::binomial_cache_[n][i] * p1 * p2;
-    Bx += b * control_points_[i].x;
-    By += b * control_points_[i].y;
+    const Vec2& v = control_points_[i];
+    Bx += b * v.x;
+    By += b * v.y;
   }
   out.x = Bx;
   out.y = By;
@@ -90,4 +93,58 @@ std::string BezierCurve::SaveAsSVGPoints(const uint32_t interpolation) {
   str += "\" />\n";
   str += "</g>";
   return str;
+}
+
+void BezierCurve::SetMadOptimizationCaching(
+    const std::vector<double>& parameterization_values) {
+  //const double p1 = pow(parameterization_value, i);
+  //const double p2 = pow(1 - parameterization_value, n - i);
+  p1_caching_.resize(parameterization_values.size());
+  for (auto i = p1_caching_.begin(); i != p1_caching_.end(); i++) {
+    i->resize(kNumberControlPoints_);
+  }
+
+  p2_caching_.resize(parameterization_values.size());
+  for (auto i = p2_caching_.begin(); i != p2_caching_.end(); i++) {
+    i->resize(kNumberControlPoints_);
+  }
+
+  for (int i = 0; i < parameterization_values.size(); i++) {
+    for (int j = 0; j < kNumberControlPoints_; j++) {
+      p1_caching_[i][j] = pow(parameterization_values[i], j);
+      p2_caching_[i][j] = pow(1 - parameterization_values[i],
+                              kNumberControlPoints_ - 1 - j);
+    }
+  }
+}
+
+void BezierCurve::CalcErrorWithMadOptimizationCaching(
+    const std::vector<Vec2>& data_points, Vec2& error) {
+  const int DP = data_points.size();
+  error.x = error.y = 0;
+
+  for (int k = 1; k < DP - 1; k++) {
+    GetCurveInTWithMadOptimizationCaching(k, temp_curve_p_);
+    const double dx = data_points[k].x - temp_curve_p_.x;
+    error.x += dx * dx;
+    const double dy = data_points[k].y - temp_curve_p_.y;
+    error.y += dy * dy;
+  }
+}
+
+void BezierCurve::GetCurveInTWithMadOptimizationCaching(const int para_index,
+                                                        Vec2& out) {
+  const int n = kNumberControlPoints_ - 1;
+  double Bx = 0;
+  double By = 0;
+  for (int i = 0; i < kNumberControlPoints_; i++) {
+    const double p1 = p1_caching_[para_index][i];
+    const double p2 = p2_caching_[para_index][i];
+    const double b = Globals::binomial_cache_[n][i] * p1 * p2;
+    const Vec2& v = control_points_[i];
+    Bx += b * v.x;
+    By += b * v.y;
+  }
+  out.x = Bx;
+  out.y = By;
 }

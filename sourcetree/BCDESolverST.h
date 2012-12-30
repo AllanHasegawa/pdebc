@@ -27,16 +27,28 @@
 
 class BCDESolverST {
  public:
-  BCDESolverST(const int control_point, const int process, BCDESolver& solver);
+  BCDESolverST(const int process, BCDESolver& solver);
   virtual ~BCDESolverST();
 
   void Start();
   void Join();
 
+  void DoWork(const int control_point);
+  void WaitWork();
+
  private:
   std::thread thread_;
+  std::mutex mutex_;
+  std::condition_variable cond_;
+  bool pending_work_;
+  bool finish_;
+
+  bool work_ready_;
+  std::mutex work_ready_lock_;
+  std::condition_variable work_ready_cond_;
+
   BCDESolver& solver_;
-  const int kCP_;
+  int control_point_;
   const int kProcess_;
 
   BezierCurve bezier_curve_;

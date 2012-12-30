@@ -62,11 +62,19 @@ BCDESolver::BCDESolver(const std::vector<double>& parameterization_values,
   bezier_curve_.control_points_[bezier_curve_.control_points_.size() - 1].y =
       data_points_[data_points_.size() - 1].y;
 
+  // this guy will hold the BCDESolverST scope
+  for (int k = 0; k < kNProcess_; k++) {
+    auto solver = std::shared_ptr<BCDESolverST>(new BCDESolverST(k, *this));
+    solvers_.push_back(solver);
+    solver->Start();
+  }
   Initialize();
 }
 
 BCDESolver::~BCDESolver() {
-
+  for (auto i = solvers_.begin(); i != solvers_.end(); i++) {
+    (*i)->Join();
+  }
 }
 
 void BCDESolver::SolveOneGeneration() {
@@ -76,18 +84,12 @@ void BCDESolver::SolveOneGeneration() {
   const int N_CP = bezier_curve_.kNumberControlPoints_ - 2;
 
   for (int i = 0; i < N_CP; i++) {
-    // this guy will hold the BCDESolverST scope
-    // smart_ptr will auto delete it on the next loop ;)
-    vector<shared_ptr<BCDESolverST>> solvers;
-
-    for (int k = 0; k < kNProcess_; k++) {
-      auto solver = shared_ptr<BCDESolverST>(new BCDESolverST(i, k, *this));
-      solvers.push_back(solver);
-      solver->Start();
+    for (auto k = solvers_.begin(), ke = solvers_.end(); k != ke; k++) {
+      (*k)->DoWork(i);
     }
 
-    for (int k = 0; k < kNProcess_; k++) {
-      solvers[k]->Join();
+    for (auto k = solvers_.begin(), ke = solvers_.end(); k != ke; k++) {
+      (*k)->WaitWork();
     }
 
     if (kNProcess_ > 1) {
@@ -128,7 +130,7 @@ void BCDESolver::Migration(const int control_point) {
 
   const int populationInterval = kPopulation_ / kNProcess_;
 
-  std::uniform_int_distribution<int> distribution(0, populationInterval);
+  std::uniform_int_distribution<int> distribution(0, populationInterval-1);
   std::mt19937 engine;  // Mersenne twister MT19937
   auto generator = std::bind(distribution, engine);
 
@@ -138,8 +140,8 @@ void BCDESolver::Migration(const int control_point) {
       if (destinyIndex >= kNProcess_) {
         destinyIndex = 0;
       }
-      int pI = generator();
-      int pSDestiny = populationInterval * destinyIndex;
+      const int pI = generator();
+      const int pSDestiny = populationInterval * destinyIndex;
       parameters_[control_point][pSDestiny + pI].x =
           parameters_[control_point][lowest_error_index_[k].x].x;
       parameters_[control_point][pSDestiny + pI].y =

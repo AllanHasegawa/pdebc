@@ -20,9 +20,12 @@
 
 #include <array>
 #include <vector>
+#include <memory>
+
 #include "BezierCurve.h"
 #include "Vec2.h"
 
+class BCDESolverST;
 class BCDESolver {
 public:
 	const double kDE_F_;
@@ -57,6 +60,8 @@ public:
 
 
 private:
+
+	std::vector<std::shared_ptr<BCDESolverST>> solvers_;
 
 	void Initialize();
 	void Migration(const int control_point);
