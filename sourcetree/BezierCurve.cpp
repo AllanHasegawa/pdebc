@@ -18,12 +18,14 @@
 #include "BezierCurve.h"
 #include <stdio.h>
 #include <string>
+#include <math.h>
 
 #include "Globals.h"
 
 BezierCurve::BezierCurve(const uint32_t n_control_points)
     : kNumberControlPoints_(n_control_points),
       control_points_(n_control_points) {
+
 }
 
 BezierCurve::~BezierCurve() {
@@ -97,24 +99,35 @@ std::string BezierCurve::SaveAsSVGPoints(const uint32_t interpolation) {
 
 void BezierCurve::SetMadOptimizationCaching(
     const std::vector<double>& parameterization_values) {
-  //const double p1 = pow(parameterization_value, i);
-  //const double p2 = pow(1 - parameterization_value, n - i);
-  p1_caching_.resize(parameterization_values.size());
-  for (auto i = p1_caching_.begin(); i != p1_caching_.end(); i++) {
-    i->resize(kNumberControlPoints_);
-  }
 
-  p2_caching_.resize(parameterization_values.size());
-  for (auto i = p2_caching_.begin(); i != p2_caching_.end(); i++) {
+  // First I optimize the p1 and p2 variables
+  p1_p2_caching_.resize(parameterization_values.size());
+  for (auto i = p1_p2_caching_.begin(); i != p1_p2_caching_.end(); i++) {
     i->resize(kNumberControlPoints_);
   }
 
   for (int i = 0; i < parameterization_values.size(); i++) {
     for (int j = 0; j < kNumberControlPoints_; j++) {
-      p1_caching_[i][j] = pow(parameterization_values[i], j);
-      p2_caching_[i][j] = pow(1 - parameterization_values[i],
-                              kNumberControlPoints_ - 1 - j);
+      const double p1 = pow(parameterization_values[i], j);
+      const double p2 = pow(1 - parameterization_values[i],
+                            kNumberControlPoints_ - 1 - j);
+      p1_p2_caching_[i][j] = p1 * p2;
     }
+  }
+
+  //then the binomial ;)
+  // calc local binomial cache
+  const int n = kNumberControlPoints_ - 1;
+  std::function<long(int)> factorial;
+  factorial = [&factorial](int f) -> double {
+    if (f > 0) {
+      return f*factorial(f-1);
+    } else {
+      return (long)1;
+    }
+  };
+  for (int i = 0; i < Globals::kMaxControlPoints; i++) {
+    local_binomial_[i] = factorial(n) / (factorial(i) * factorial(n - i));
   }
 }
 
@@ -138,9 +151,9 @@ void BezierCurve::GetCurveInTWithMadOptimizationCaching(const int para_index,
   double Bx = 0;
   double By = 0;
   for (int i = 0; i < kNumberControlPoints_; i++) {
-    const double p1 = p1_caching_[para_index][i];
-    const double p2 = p2_caching_[para_index][i];
-    const double b = Globals::binomial_cache_[n][i] * p1 * p2;
+    //const double p1 = p1_caching_[para_index][i];
+    //const double p2 = p2_caching_[para_index][i];
+    const double b = local_binomial_[i] * p1_p2_caching_[para_index][i];
     const Vec2& v = control_points_[i];
     Bx += b * v.x;
     By += b * v.y;

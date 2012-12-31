@@ -21,6 +21,7 @@
 #include <thread>
 #include <functional>
 #include <random>
+#include <array>
 
 #include "BCDESolver.h"
 #include "BezierCurve.h"
@@ -53,11 +54,11 @@ class BCDESolverST {
 
   BezierCurve bezier_curve_;
 
+  std::uniform_int_distribution<int> dt_int_pop_interval_from_zero_;
   std::uniform_int_distribution<int> dt_int_pop_interval_;
   std::uniform_int_distribution<int> dt_int_0_2_;
   std::uniform_real_distribution<double> dt_real_0_1_;
   std::mt19937 engine_;  // Mersenne twister MT19937
-
 
   void Run();
   void Mutate(const int actual_index, Vec2& trials);

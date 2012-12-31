@@ -37,12 +37,15 @@ BCDESolverST::BCDESolverST(const int process, BCDESolver& solver)
       finish_(false),
       work_ready_(false) {
 
+
   std::random_device rd;
   engine_.seed(rd());
   const int pop_interval = (solver_.kPopulation_ / solver_.kNProcess_);
   const int pop_start = kProcess_ * pop_interval;
   const int pop_end = pop_start + pop_interval;
 
+  dt_int_pop_interval_from_zero_ = std::uniform_int_distribution<int>(
+      0, pop_interval - 1);
   dt_int_pop_interval_ = std::uniform_int_distribution<int>(pop_start,
                                                             pop_end - 1);
 
@@ -77,6 +80,7 @@ void BCDESolverST::DoWork(const int control_point) {
   lock_guard<mutex> lock(mutex_);
   control_point_ = control_point;
   pending_work_ = true;
+  work_ready_ = false;
   cond_.notify_one();
 }
 
@@ -84,7 +88,6 @@ void BCDESolverST::WaitWork() {
   using namespace std;
   unique_lock<mutex> lock(work_ready_lock_);
   work_ready_cond_.wait(lock, [this]() {return this->work_ready_;});
-  work_ready_ = false;
 }
 
 void BCDESolverST::Run() {
@@ -102,6 +105,8 @@ void BCDESolverST::Run() {
 
   Vec2 error_before;
   Vec2 lowest_error_index;
+  bezier_curve_.CalcErrorWithMadOptimizationCaching(data_points,
+                                                    error_before);
 
   while (!finish_) {
 
@@ -117,6 +122,9 @@ void BCDESolverST::Run() {
     std::vector<Vec2>& population_errors =
         solver_.population_errors_[control_point_];
 
+    solver_.random_population_interval_[kProcess_] =
+        dt_int_pop_interval_from_zero_(engine_);
+
     // update local BezierCurve
     {
       for (int i = 1; i < bc.kNumberControlPoints_ - 1; i++) {
@@ -128,8 +136,6 @@ void BCDESolverST::Run() {
     lowest_error_index.x = 0;
     lowest_error_index.y = 0;
 
-    bezier_curve_.CalcErrorWithMadOptimizationCaching(data_points,
-                                                      error_before);
 
     Vec2 trials;
 
@@ -170,10 +176,6 @@ void BCDESolverST::Run() {
 void BCDESolverST::Mutate(const int actual_index, Vec2& trials) {
   const int D = 2;
   // final int NP = BCDESolver.N_POPULATION;
-
-  const int pop_interval = (solver_.kPopulation_ / solver_.kNProcess_);
-  const int pop_start = kProcess_ * pop_interval;
-  const int pop_end = pop_start + pop_interval;
 
   int r1 = dt_int_pop_interval_(engine_);
   while (r1 == actual_index) {

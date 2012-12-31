@@ -38,7 +38,8 @@ BCDESolver::BCDESolver(const std::vector<double>& parameterization_values,
       kDE_F_(de_f),
       kDE_CR_(de_cr),
       kPopulation_(population),
-      generation_(0) {
+      generation_(0),
+      random_population_interval_(n_process) {
 
   parameters_.resize(bezier_curve.kNumberControlPoints_ - 2);
   for (auto i = parameters_.begin(), e = parameters_.end(); i != e; i++) {
@@ -130,22 +131,18 @@ void BCDESolver::Migration(const int control_point) {
 
   const int populationInterval = kPopulation_ / kNProcess_;
 
-  std::uniform_int_distribution<int> distribution(0, populationInterval-1);
-  std::mt19937 engine;  // Mersenne twister MT19937
-  auto generator = std::bind(distribution, engine);
-
   for (int k = 0; k < kNProcess_; k++) {
-    if (0 <= phi) {
-      int destinyIndex = k + 1;
-      if (destinyIndex >= kNProcess_) {
-        destinyIndex = 0;
-      }
-      const int pI = generator();
-      const int pSDestiny = populationInterval * destinyIndex;
-      parameters_[control_point][pSDestiny + pI].x =
-          parameters_[control_point][lowest_error_index_[k].x].x;
-      parameters_[control_point][pSDestiny + pI].y =
-          parameters_[control_point][lowest_error_index_[k].y].y;
+    //if (0 <= phi) {
+    int destinyIndex = k + 1;
+    if (destinyIndex >= kNProcess_) {
+      destinyIndex = 0;
     }
+    const int pI = random_population_interval_[k];
+    const int pSDestiny = populationInterval * destinyIndex;
+    parameters_[control_point][pSDestiny + pI].x =
+        parameters_[control_point][lowest_error_index_[k].x].x;
+    parameters_[control_point][pSDestiny + pI].y =
+        parameters_[control_point][lowest_error_index_[k].y].y;
+    //}
   }
 }

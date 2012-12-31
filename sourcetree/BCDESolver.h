@@ -50,6 +50,11 @@ public:
 	 */
 	std::vector<Vec2> lowest_error_index_;
 
+	// this is used by the migration
+	// each thread calc a random number ;)
+	// Callgrind said it was slow =X
+  std::vector<int> random_population_interval_;
+
 	BCDESolver(const std::vector<double>& parameterization_values,
 			const std::vector<Vec2>& data_points, const int n_process,
 			const double de_f, const double de_cr, const int population,

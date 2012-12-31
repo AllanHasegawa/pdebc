@@ -22,9 +22,11 @@
 #include <vector>
 #include <string>
 #include "Vec2.h"
+#include "Globals.h"
 
 class BezierCurve {
  public:
+  std::array<double, Globals::kMaxControlPoints> local_binomial_;
   const uint32_t kNumberControlPoints_;
   std::vector<Vec2> control_points_;
 
@@ -44,8 +46,7 @@ class BezierCurve {
 
  private:
   Vec2 temp_curve_p_;
-  std::vector<std::vector<double>> p1_caching_;
-  std::vector<std::vector<double>> p2_caching_;
+  std::vector<std::vector<double>> p1_p2_caching_;
 
   void GetCurveInTWithMadOptimizationCaching(const int para_index, Vec2& out);
 
