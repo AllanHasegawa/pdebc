@@ -41,12 +41,18 @@ class BezierCurve {
 
   void SetMadOptimizationCaching(
       const std::vector<double>& parameterization_values);
+  void UpdateVariableCPForMadOptimizationCaching(
+      const std::vector<double>& parameterization_values,
+      const int variable_control_point);
   void CalcErrorWithMadOptimizationCaching(const std::vector<Vec2>& data_points,
                                            Vec2& error);
 
  private:
+  std::vector<Vec2> const_control_point_;
+  int variable_control_point_;
   Vec2 temp_curve_p_;
   std::vector<std::vector<double>> p1_p2_caching_;
+  std::vector<std::vector<double>> b_caching_;
 
   void GetCurveInTWithMadOptimizationCaching(const int para_index, Vec2& out);
 

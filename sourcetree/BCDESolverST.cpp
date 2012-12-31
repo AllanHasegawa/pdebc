@@ -22,6 +22,7 @@
 #include <vector>
 #include <array>
 #include <random>
+#include <cstdlib>
 
 #include "BCDESolver.h"
 #include "BezierCurve.h"
@@ -37,13 +38,14 @@ BCDESolverST::BCDESolverST(const int process, BCDESolver& solver)
       finish_(false),
       work_ready_(false) {
 
-
   std::random_device rd;
   engine_.seed(rd());
   const int pop_interval = (solver_.kPopulation_ / solver_.kNProcess_);
   const int pop_start = kProcess_ * pop_interval;
   const int pop_end = pop_start + pop_interval;
 
+  pop_start_ = pop_start;
+  pop_end_ = pop_end;
   dt_int_pop_interval_from_zero_ = std::uniform_int_distribution<int>(
       0, pop_interval - 1);
   dt_int_pop_interval_ = std::uniform_int_distribution<int>(pop_start,
@@ -55,6 +57,8 @@ BCDESolverST::BCDESolverST(const int process, BCDESolver& solver)
     bezier_curve_.control_points_[i].y = bc.control_points_[i].y;
   }
   bezier_curve_.SetMadOptimizationCaching(solver_.parameterization_values_);
+  bezier_curve_.UpdateVariableCPForMadOptimizationCaching(
+      solver_.parameterization_values_, 1);
   //printf("Starting process %d\n", kProcess_);
 }
 
@@ -105,8 +109,6 @@ void BCDESolverST::Run() {
 
   Vec2 error_before;
   Vec2 lowest_error_index;
-  bezier_curve_.CalcErrorWithMadOptimizationCaching(data_points,
-                                                    error_before);
 
   while (!finish_) {
 
@@ -136,8 +138,12 @@ void BCDESolverST::Run() {
     lowest_error_index.x = 0;
     lowest_error_index.y = 0;
 
-
     Vec2 trials;
+    // just before pop processing, let's cache the BC control points
+    bezier_curve_.UpdateVariableCPForMadOptimizationCaching(
+        solver_.parameterization_values_, control_point_ + 1);
+    bezier_curve_.CalcErrorWithMadOptimizationCaching(solver_.data_points_,
+                                                      error_before);
 
     for (int k = pop_start; k < pop_end; k++) {
       Mutate(k, trials);
@@ -177,20 +183,22 @@ void BCDESolverST::Mutate(const int actual_index, Vec2& trials) {
   const int D = 2;
   // final int NP = BCDESolver.N_POPULATION;
 
-  int r1 = dt_int_pop_interval_(engine_);
+  // Callgrind really hated the use of "dt_int_pop_interval"
+
+  int r1 = RN(pop_start_, pop_end_);
   while (r1 == actual_index) {
-    r1 = dt_int_pop_interval_(engine_);
+    r1 = RN(pop_start_, pop_end_);
   }
-  int r2 = dt_int_pop_interval_(engine_);
+  int r2 = RN(pop_start_, pop_end_);
   while (r2 == r1 || r2 == actual_index) {
-    r2 = dt_int_pop_interval_(engine_);
+    r2 = RN(pop_start_, pop_end_);
   }
-  int r3 = dt_int_pop_interval_(engine_);
+  int r3 = RN(pop_start_, pop_end_);
   while (r3 == r2 || r3 == r1 || r3 == actual_index) {
-    r3 = dt_int_pop_interval_(engine_);
+    r3 = RN(pop_start_, pop_end_);
   }
 
-  int j = dt_int_0_2_(engine_);
+  int j = rand() % 2;
   std::vector<Vec2>& p = solver_.parameters_[control_point_];
 
   for (int k = 1; k <= D; k++) {
@@ -231,4 +239,10 @@ void BCDESolverST::Select(const Vec2& trial, const Vec2& error_before,
   if (error_new.y > error_before.y) {
     bezier_curve_.control_points_[control_point_ + 1].y = ty;
   }
+}
+
+uint32_t BCDESolverST::RN(uint32_t min, uint32_t max) {
+  /*double scaled = (double) rand() / RAND_MAX;
+  return (max - min + 1) * scaled + min;*/
+  return ( rand() % max ) + min;
 }

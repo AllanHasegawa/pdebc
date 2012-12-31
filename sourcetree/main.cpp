@@ -5,6 +5,8 @@
 #include <time.h>
 #include <random>
 #include <vector>
+#include <cstdlib>
+
 #include "Globals.h"
 #include "BezierCurve.h"
 #include "SVGParser.h"
@@ -16,6 +18,11 @@ void StressTest(const int n_gererations, BCDESolver& solver);
 
 int main(int argc, char *argv[]) {
   using namespace std;
+
+  // because Callgrind did not like std::uniform_int_distribution(low performance)
+  // impact: not per-thread randomization
+  // not equally distributed :(
+  srand(time(NULL));
 
   Globals::CalcBinomial();
 

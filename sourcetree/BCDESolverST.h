@@ -38,6 +38,10 @@ class BCDESolverST {
   void WaitWork();
 
  private:
+
+  int pop_start_;
+  int pop_end_;
+
   std::thread thread_;
   std::mutex mutex_;
   std::condition_variable cond_;
@@ -60,6 +64,7 @@ class BCDESolverST {
   std::uniform_real_distribution<double> dt_real_0_1_;
   std::mt19937 engine_;  // Mersenne twister MT19937
 
+  uint32_t RN(uint32_t min, uint32_t max);
   void Run();
   void Mutate(const int actual_index, Vec2& trials);
   void Select(const Vec2& trial, const Vec2& error_before, Vec2& error_new);

@@ -97,6 +97,29 @@ std::string BezierCurve::SaveAsSVGPoints(const uint32_t interpolation) {
   return str;
 }
 
+void BezierCurve::UpdateVariableCPForMadOptimizationCaching(
+    const std::vector<double>& parameterization_values,
+    const int variable_control_point) {
+  // Then I cache the control points that will remain const
+  variable_control_point_ = variable_control_point;
+  const int np = parameterization_values.size();
+  const_control_point_.resize(np);
+  for (int p = 0; p < np; p++) {
+    double Bx = 0;
+    double By = 0;
+    for (int i = 0; i < kNumberControlPoints_; i++) {
+      if (i == variable_control_point) {
+        continue;
+      }
+      const double b = b_caching_[p][i];
+      const Vec2& v = control_points_[i];
+      Bx += b * v.x;
+      By += b * v.y;
+    }
+    const_control_point_[p].x = Bx;
+    const_control_point_[p].y = By;
+  }
+}
 void BezierCurve::SetMadOptimizationCaching(
     const std::vector<double>& parameterization_values) {
 
@@ -129,6 +152,16 @@ void BezierCurve::SetMadOptimizationCaching(
   for (int i = 0; i < Globals::kMaxControlPoints; i++) {
     local_binomial_[i] = factorial(n) / (factorial(i) * factorial(n - i));
   }
+
+  b_caching_.resize(parameterization_values.size());
+  for (auto i = b_caching_.begin(); i != b_caching_.end(); i++) {
+    i->resize(kNumberControlPoints_);
+  }
+  for (int p = 0; p < parameterization_values.size(); p++) {
+    for (int i = 0; i < kNumberControlPoints_; i++) {
+      b_caching_[p][i] = local_binomial_[i] * p1_p2_caching_[p][i];
+    }
+  }
 }
 
 void BezierCurve::CalcErrorWithMadOptimizationCaching(
@@ -147,17 +180,23 @@ void BezierCurve::CalcErrorWithMadOptimizationCaching(
 
 void BezierCurve::GetCurveInTWithMadOptimizationCaching(const int para_index,
                                                         Vec2& out) {
-  const int n = kNumberControlPoints_ - 1;
-  double Bx = 0;
-  double By = 0;
-  for (int i = 0; i < kNumberControlPoints_; i++) {
-    //const double p1 = p1_caching_[para_index][i];
-    //const double p2 = p2_caching_[para_index][i];
-    const double b = local_binomial_[i] * p1_p2_caching_[para_index][i];
-    const Vec2& v = control_points_[i];
-    Bx += b * v.x;
-    By += b * v.y;
-  }
-  out.x = Bx;
-  out.y = By;
+  const Vec2& v = control_points_[variable_control_point_];
+  out.x = v.x * b_caching_[para_index][variable_control_point_]
+      + const_control_point_[para_index].x;
+  out.y = v.y * b_caching_[para_index][variable_control_point_]
+      + const_control_point_[para_index].y;
+/*
+   double Bx = 0;
+   double By = 0;
+   for (int i = 0; i < kNumberControlPoints_; i++) {
+   //const double p1 = p1_caching_[para_index][i];
+   //const double p2 = p2_caching_[para_index][i];
+   const double b = b_caching_[para_index][i];//local_binomial_[i] * p1_p2_caching_[para_index][i];
+   const Vec2& v = control_points_[i];
+   Bx += b * v.x;
+   By += b * v.y;
+   }
+   out.x = Bx;
+   out.y = By;*/
 }
+
