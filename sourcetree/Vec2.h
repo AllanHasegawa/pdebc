@@ -23,5 +23,4 @@ struct Vec2 {
 	double y = 0;
 };
 
-
 #endif /* VEC2_H_ */

@@ -2,6 +2,7 @@
 
 #include "external/tinyxml2/tinyxml2.h"
 
+#include <time.h>
 #include <random>
 #include <vector>
 #include "Globals.h"
@@ -11,6 +12,7 @@
 #include "Vec2.h"
 
 void PrintUsage();
+void StressTest(const int n_gererations, BCDESolver& solver);
 
 int main(int argc, char *argv[]) {
   using namespace std;
@@ -28,6 +30,7 @@ int main(int argc, char *argv[]) {
   int n_generations;
   int n_control_points;
   int n_population;
+  bool stress_test = false;
 
   if (argc < 2) {
     PrintUsage();
@@ -36,7 +39,9 @@ int main(int argc, char *argv[]) {
 
   for (int i = 1; i < argc; i++) {
     if (i + 1 < argc) {
-      if (strcmp(argv[i], "-d") == 0) {
+      if (strcmp(argv[i], "-s") == 0) {
+        stress_test = true;
+      } else if (strcmp(argv[i], "-d") == 0) {
         data_points_file = argv[i + 1];
         verify_input[0] = true;
         i++;
@@ -85,14 +90,34 @@ int main(int argc, char *argv[]) {
   BCDESolver de(chord_length, data_points, n_processes, de_f, de_cr,
                 n_population, bc);
 
-  while (de.generation_ < n_generations) {
-    de.SolveOneGeneration();
+  if (stress_test) {
+    StressTest(n_generations, de);
+  } else {
+    while (de.generation_ < n_generations) {
+      de.SolveOneGeneration();
+    }
+
+    string save_content = bc.SaveAsSVGPoints(128);
+    printf("%s\n", save_content.c_str());
   }
 
-  string save_content = bc.SaveAsSVGPoints(128);
-
-  printf("%s\n", save_content.c_str());
   return 0;
+}
+
+void StressTest(const int n_generations, BCDESolver& solver) {
+  while (true) {
+    timespec start;
+    clock_gettime(CLOCK_REALTIME, &start);
+    while (solver.generation_ < n_generations) {
+      solver.SolveOneGeneration();
+    }
+    timespec stop;
+    clock_gettime(CLOCK_REALTIME, &stop);
+    stop.tv_sec = stop.tv_sec - start.tv_sec;
+    stop.tv_nsec = stop.tv_nsec - start.tv_nsec;
+    const int time = (int) (1000.0 * stop.tv_sec + (double) stop.tv_nsec / 1e6);
+    printf("%d\n", time);
+  }
 }
 
 void PrintUsage() {

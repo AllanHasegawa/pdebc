@@ -26,12 +26,9 @@
 #include "Vec2.h"
 
 SVGParser::SVGParser() {
-  // TODO Auto-generated constructor stub
-
 }
 
 SVGParser::~SVGParser() {
-  // TODO Auto-generated destructor stub
 }
 
 void SVGParser::GetDataPoints(const char* file_name,

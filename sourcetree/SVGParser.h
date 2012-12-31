@@ -24,7 +24,6 @@
 #include "Vec2.h"
 
 class ErrorParsingSVG : public std::exception {
-
 };
 
 class SVGParser {

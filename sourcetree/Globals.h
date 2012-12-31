@@ -72,6 +72,7 @@ struct Globals {
     }
   }
 
+
  private:
   Globals() {
   }

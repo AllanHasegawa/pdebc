@@ -21,4 +21,3 @@ std::array<std::array<double, Globals::kMaxControlPoints>,
 		Globals::kMaxControlPoints> Globals::binomial_cache_ = std::array<
 		std::array<double, Globals::kMaxControlPoints>,
 		Globals::kMaxControlPoints>();
-
