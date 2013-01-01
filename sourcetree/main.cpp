@@ -22,7 +22,7 @@ int main(int argc, char *argv[]) {
   // because Callgrind did not like std::uniform_int_distribution(low performance)
   // impact: not per-thread randomization
   // not equally distributed :(
-  srand(time(NULL));
+  srand (time(NULL));
 
   Globals::CalcBinomial();
 

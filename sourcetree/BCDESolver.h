@@ -37,12 +37,6 @@ public:
 	const std::vector<Vec2>& data_points_;
 	const std::vector<double>& parameterization_values_;
 
-	/*
-	 *  [control point][population][dimension]
-	 *  Here, "CP-2" is because we ignore the first and last CP
-	 */
-	std::vector<std::vector<Vec2>> parameters_;
-	std::vector<std::vector<Vec2>> population_errors_;
 
 	int generation_;
 	/*

@@ -28,19 +28,26 @@
 
 class BCDESolverST {
  public:
-  BCDESolverST(const int process, BCDESolver& solver);
+  /*
+   *  [control point][population][dimension]
+   *  Here, "CP-2" is because we ignore the first and last CP
+   */
+  std::vector<std::vector<Vec2>> parameters_;
+  std::vector<std::vector<Vec2>> population_errors_;
+
+  BCDESolverST(const int process, const int population, BCDESolver& solver);
   virtual ~BCDESolverST();
 
   void Start();
   void Join();
 
-  void DoWork(const int control_point);
+  void Initialize();
+  void DoWork(const int control_point, const Vec2& error_before);
   void WaitWork();
 
  private:
 
-  int pop_start_;
-  int pop_end_;
+  const int kPopulation_;
 
   std::thread thread_;
   std::mutex mutex_;
@@ -57,14 +64,22 @@ class BCDESolverST {
   const int kProcess_;
 
   BezierCurve bezier_curve_;
+  Vec2 error_before_;
 
   std::uniform_int_distribution<int> dt_int_pop_interval_from_zero_;
-  std::uniform_int_distribution<int> dt_int_pop_interval_;
   std::uniform_int_distribution<int> dt_int_0_2_;
   std::uniform_real_distribution<double> dt_real_0_1_;
   std::mt19937 engine_;  // Mersenne twister MT19937
+  std::mt19937 engine0_;
+  std::mt19937 engine1_;
+
+  std::vector<std::array<int,3>> random_rs_;
+  int r_rs_;
+  std::vector<int> random_j_;
+  std::vector<std::array<float,2>> random_cr_;
 
   uint32_t RN(uint32_t min, uint32_t max);
+  void GenerateRandom();
   void Run();
   void Mutate(const int actual_index, Vec2& trials);
   void Select(const Vec2& trial, const Vec2& error_before, Vec2& error_new);

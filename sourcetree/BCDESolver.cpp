@@ -41,17 +41,6 @@ BCDESolver::BCDESolver(const std::vector<double>& parameterization_values,
       generation_(0),
       random_population_interval_(n_process) {
 
-  parameters_.resize(bezier_curve.kNumberControlPoints_ - 2);
-  for (auto i = parameters_.begin(), e = parameters_.end(); i != e; i++) {
-    i->resize(kPopulation_);
-  }
-
-  population_errors_.resize(bezier_curve.kNumberControlPoints_ - 2);
-  for (auto i = population_errors_.begin(), e = population_errors_.end();
-      i != e; i++) {
-    i->resize(kPopulation_);
-  }
-
   lowest_error_index_.resize(n_process);
 
   // place P0 in first data_point
@@ -65,11 +54,14 @@ BCDESolver::BCDESolver(const std::vector<double>& parameterization_values,
 
   // this guy will hold the BCDESolverST scope
   for (int k = 0; k < kNProcess_; k++) {
-    auto solver = std::shared_ptr<BCDESolverST>(new BCDESolverST(k, *this));
+    auto solver = std::shared_ptr<BCDESolverST>(
+        new BCDESolverST(k, kPopulation_ / kNProcess_, *this));
     solvers_.push_back(solver);
     solver->Start();
   }
-  Initialize();
+
+  bezier_curve_.SetMadOptimizationCaching(data_points_,
+                                          parameterization_values_);
 }
 
 BCDESolver::~BCDESolver() {
@@ -84,9 +76,15 @@ void BCDESolver::SolveOneGeneration() {
   // -2: ignore first and last CP
   const int N_CP = bezier_curve_.kNumberControlPoints_ - 2;
 
+  Vec2 error_before;
   for (int i = 0; i < N_CP; i++) {
+
+    bezier_curve_.UpdateVariableCPForMadOptimizationCaching(
+        parameterization_values_, i + 1);
+    bezier_curve_.CalcErrorWithMadOptimizationCaching(error_before);
+
     for (auto k = solvers_.begin(), ke = solvers_.end(); k != ke; k++) {
-      (*k)->DoWork(i);
+      (*k)->DoWork(i, error_before);
     }
 
     for (auto k = solvers_.begin(), ke = solvers_.end(); k != ke; k++) {
@@ -97,33 +95,40 @@ void BCDESolver::SolveOneGeneration() {
       Migration(i);
     }
 
-    bezier_curve_.control_points_[i + 1].x =
-        parameters_[i][lowest_error_index_[0].x].x;
-    bezier_curve_.control_points_[i + 1].y =
-        parameters_[i][lowest_error_index_[0].y].y;
+    Vec2 low_error;
+    low_error.x =
+        solvers_[0]->population_errors_[i][lowest_error_index_[0].x].x;
+    low_error.y =
+        solvers_[0]->population_errors_[i][lowest_error_index_[0].y].y;
+    int low_error_x_i = 0;
+    int low_error_y_i = 0;
+
+    if (kNProcess_ > 1) {
+      for (int k = 1; k < kNProcess_; k++) {
+        const double dx = solvers_[k]->parameters_[i][lowest_error_index_[k].x]
+            .x;
+        const double dy = solvers_[k]->parameters_[i][lowest_error_index_[k].y]
+            .y;
+        if (dx < low_error.x) {
+          low_error_x_i = k;
+          low_error.x = dx;
+        }
+        if (dy < low_error.y) {
+          low_error_y_i = k;
+          low_error.y = dy;
+        }
+      }
+    }
+    bezier_curve_.control_points_[i + 1].x = solvers_[low_error_y_i]
+        ->parameters_[i][lowest_error_index_[low_error_y_i].x].x;
+    bezier_curve_.control_points_[i + 1].y = solvers_[low_error_y_i]
+        ->parameters_[i][lowest_error_index_[low_error_y_i].y].y;
   }
   generation_++;
 }
 
 void BCDESolver::Initialize() {
-  const int bcn = bezier_curve_.kNumberControlPoints_;
 
-  const int w = 128;
-  const int h = 1024;
-
-  std::uniform_real_distribution<double> distribution(-w, w);
-  std::random_device rd;
-  std::mt19937 engine(rd());  // Mersenne twister MT19937
-  auto generator = std::bind(distribution, engine);
-
-  // (bc-2): We ignore the first and last control points :3
-  // random population for each control point...
-  for (int i = 0; i < bcn - 2; i++) {
-    for (int j = 0; j < kPopulation_; j++) {
-      parameters_[i][j].x = generator();
-      parameters_[i][j].y = generator();
-    }
-  }
 }
 
 void BCDESolver::Migration(const int control_point) {
@@ -132,17 +137,16 @@ void BCDESolver::Migration(const int control_point) {
   const int populationInterval = kPopulation_ / kNProcess_;
 
   for (int k = 0; k < kNProcess_; k++) {
-    //if (0 <= phi) {
+//if (0 <= phi) {
     int destinyIndex = k + 1;
     if (destinyIndex >= kNProcess_) {
       destinyIndex = 0;
     }
     const int pI = random_population_interval_[k];
-    const int pSDestiny = populationInterval * destinyIndex;
-    parameters_[control_point][pSDestiny + pI].x =
-        parameters_[control_point][lowest_error_index_[k].x].x;
-    parameters_[control_point][pSDestiny + pI].y =
-        parameters_[control_point][lowest_error_index_[k].y].y;
-    //}
+    solvers_[destinyIndex]->parameters_[control_point][pI].x = solvers_[k]
+        ->parameters_[control_point][lowest_error_index_[k].x].x;
+    solvers_[destinyIndex]->parameters_[control_point][pI].y = solvers_[k]
+        ->parameters_[control_point][lowest_error_index_[k].y].y;
+//}
   }
 }
