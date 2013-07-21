@@ -1,9 +1,8 @@
 #include <cstdio>
 
-#include "ThreadsDE.hpp"
+#include "SequentialDE.hpp"
 
 int main(int argc, char *argv[]) {
-  using namespace std;
 
   printf("Hello World\n");
 }
