@@ -15,7 +15,7 @@ namespace pdebc {
 template <class T, unsigned I, unsigned J>
 using Matrix = std::array<std::array<T, J>, I>;
 
-template <class POP_TYPE = double, int POP_DIM = 2, int POP_SIZE = 512, class ERROR_TYPE = double>
+template <class POP_TYPE, int POP_DIM, int POP_SIZE, class ERROR_TYPE>
 struct SequentialDE {
 	double kCR_;
 	double kF_;
@@ -23,16 +23,19 @@ struct SequentialDE {
 	Matrix<POP_TYPE, POP_SIZE, POP_DIM> population_;
 
 	std::function<POP_TYPE()> callback_population_generator_;
-	std::function<uint32_t(const uint32_t)> callback_population_picker;
+	std::function<uint32_t()> callback_population_picker_;
 	std::function<ERROR_TYPE(const std::array<POP_TYPE,POP_DIM>&)> callback_calc_error_;
 	std::function<bool(const ERROR_TYPE&,const ERROR_TYPE&)> callback_error_evaluation_;
 
 	SequentialDE(
 		std::function<POP_TYPE()>&& callback_population_generator,
 		std::function<uint32_t()>&& callback_population_picker,
-		std::function<ERROR_TYPE(...)>&& callback_calc_error,
-		std::function<bool(ERROR_TYPE,ERROR_TYPE)>&& callback_error_evaluation) {
-
+		std::function<ERROR_TYPE(const std::array<POP_TYPE,POP_DIM>&)>&& callback_calc_error,
+		std::function<bool(const ERROR_TYPE&,const ERROR_TYPE&)>&& callback_error_evaluation) :
+			callback_population_generator_{callback_population_generator},
+			callback_population_picker_{callback_population_picker},
+			callback_calc_error_{callback_calc_error},
+			callback_error_evaluation_{callback_error_evaluation} {
 		generatePopulation();
 		calcGenerationError();
 	}
@@ -42,22 +45,15 @@ struct SequentialDE {
 	}
 
 	void solveOneGeneration() {
-		ERROR_TYPE error_best_candidate = callback_calc_error_();
 		for (uint32_t i = 0; i < POP_SIZE; i++) {
 			mutation(i);
-			ERROR_TYPE error_new = callback_calc_error_(pop_candidate_);
-			if (callback_error_evaluation_(pop_errors_[i], error_new)) {
-				for (int d = 0; d < POP_DIM; d++) {
-					population_[i][d] = pop_candidate_[d];
-				}
-				pop_errors_[i] = error_new;
-			}
+			select(i);
 		}
 	}
 
 	std::tuple<ERROR_TYPE,std::array<POP_TYPE,POP_DIM>> getBestCandidate() {
 		
-		ERROR_TYPE e = std::min_element(pop_errors_.begin(), pop_errors_.end(),
+		auto e = std::min_element(pop_errors_.begin(), pop_errors_.end(),
 			callback_error_evaluation_);
 		auto min = std::distance(pop_errors_.begin(), e);
 
@@ -66,7 +62,7 @@ struct SequentialDE {
 			r[d] = population_[d][min];
 		}
 
-		return {e,r};
+		return {pop_errors_[min],r};
 	}
 
 
@@ -108,8 +104,15 @@ private:
 	    }
 	}
 
-	void select() {
+	void select(const uint32_t actual_index) {
+		ERROR_TYPE error_new = callback_calc_error_(pop_candidate_);
 
+		if (callback_error_evaluation_(pop_errors_[actual_index], error_new)) {
+			for (int d = 0; d < POP_DIM; d++) {
+				population_[actual_index][d] = pop_candidate_[d];
+			}
+			pop_errors_[actual_index] = error_new;
+		}
 	}
 };
 
