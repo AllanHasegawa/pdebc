@@ -2,9 +2,16 @@
 project(pdebc)
 
 set(SRCS
-	main.cpp
+	_emptysrc.cpp
+)
+
+set(HEADERS
+	SequentialDE.hpp
 )
 
 SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -std=c++11 -stdlib=libc++")
 SET(CMAKE_CXX_FLAGS_RELEASE "-O3 -march=native -pipe -fomit-frame-pointer -std=c++11 -stdlib=libc++")
-add_executable(pdebc ${SRCS})
+add_library(pdebc SHARED ${SRCS})
+
+install (TARGETS pdebc DESTINATION pdebc/lib)
+install (FILES SequentialDE.hpp DESTINATION pdebc/include)
