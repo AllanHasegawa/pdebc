@@ -49,13 +49,14 @@ struct BaseDE {
 
 	}
 
-	~BaseDE() {
-
-	}
-	
 	virtual void solveOneGeneration() = 0;
 	virtual void solveNGenerations(const uint32_t N) = 0;
 	virtual std::tuple<ERROR_TYPE,std::array<POP_TYPE,POP_DIM>> getBestCandidate() const = 0;
+
+protected:
+	~BaseDE() {
+
+	}
 };
 
 } // end namespace pdebc

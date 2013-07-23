@@ -73,21 +73,20 @@ int main(int argc, char *argv[]) {
   };
   
 
-  shared_ptr<BaseDE<POPULATION_TYPE,POPULATION_DIM,POPULATION_SIZE,ERROR_TYPE>> de =
-  make_shared<SequentialDE<POPULATION_TYPE,POPULATION_DIM,POPULATION_SIZE,ERROR_TYPE>>(
+  SequentialDE<POPULATION_TYPE,POPULATION_DIM,POPULATION_SIZE,ERROR_TYPE> de {
     0.5, 0.8,
     std::move(rand_domain), //std::function<POP_TYPE()>&& callback_population_generator
     std::move(rand_pop), //std::function<uint32_t()>&& callback_population_picker
     std::move(calc_error), //std::function<ERROR_TYPE(const std::array<POP_TYPE,POP_DIM>&)>&& callback_calc_error
     std::move(error_evaluation) //std::function<bool(const ERROR_TYPE&,const ERROR_TYPE&)>&& callback_error_evaluation)
-  );
+  };
   
   for (int i = 0; i < 20; i++) {
-    de->solveOneGeneration();
+    de.solveOneGeneration();
   }
 
-  auto bc_error = get<0>(de->getBestCandidate());
-  auto bc_point = get<1>(de->getBestCandidate());
+  auto bc_error = get<0>(de.getBestCandidate());
+  auto bc_point = get<1>(de.getBestCandidate());
   printf("POINT: (%g,%g)\n", POINT[0],POINT[1]);
   printf("Best candidate point: (%g,%g)\n", bc_point[0], bc_point[1]);
   printf("Best Candidate error: %g\n", std::sqrt(bc_error));
