@@ -157,6 +157,7 @@ private:
 		    j = (j + 1) % POP_DIM;
 	    }
 	}
+	
 
 	void select(const uint32_t actual_index) {
 		ERROR_TYPE error_new = this->callback_calc_error_(pop_candidate_);

@@ -3,13 +3,13 @@ find_package(PkgConfig)
 pkg_check_modules(PC_LIBPDEBC QUIET pdebc)
 set(LIBPDEBC_DEFINITIONS ${PC_LIBPDEBC_CFLAGS_OTHER})
 
-find_path(LIBPDEBC_INCLUDE_DIR SequentialDE.hpp
+find_path(LIBPDEBC_INCLUDE_DIR pdebc/SequentialDE.hpp
           HINTS ${PC_LIBPDEBC_INCLUDEDIR} ${PC_LIBPDEBC_INCLUDE_DIRS}
-          PATH_SUFFIXES pdebc/include )
+          )
 
 find_library(LIBPDEBC_LIBRARY NAMES pdebc
              HINTS ${PC_LIBPDEBC_LIBDIR} ${PC_LIBPDEBC_LIBRARY_DIRS}
-             PATH_SUFFIXES pdebc/lib )
+             PATH_SUFFIXES pdebc )
 
 set(LIBPDEBC_LIBRARIES ${LIBPDEBC_LIBRARY} )
 set(LIBPDEBC_INCLUDE_DIRS ${LIBPDEBC_INCLUDE_DIR} )

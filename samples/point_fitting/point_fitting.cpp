@@ -33,8 +33,7 @@ Point Fitting Sample
 #include <tuple>
 #include <cmath>
 
-#include "BaseDE.hpp"
-#include "SequentialDE.hpp"
+#include "pdebc/SequentialDE.hpp"
 
 constexpr std::array<double,2> POINT {{23.345, -10.009}};
 
@@ -80,6 +79,7 @@ int main(int argc, char *argv[]) {
     std::move(calc_error), //std::function<ERROR_TYPE(const std::array<POP_TYPE,POP_DIM>&)>&& callback_calc_error
     std::move(error_evaluation) //std::function<bool(const ERROR_TYPE&,const ERROR_TYPE&)>&& callback_error_evaluation)
   };
+
   
   for (int i = 0; i < 20; i++) {
     de.solveOneGeneration();
