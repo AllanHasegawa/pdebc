@@ -9,7 +9,7 @@
 #include <functional>
 #include <random>
 
-//#include "BaseDE.hpp"
+#include "BaseDE.hpp"
 
 namespace pdebc {
 
@@ -17,26 +17,21 @@ template <class T, unsigned I, unsigned J>
 using Matrix = std::array<std::array<T, J>, I>;
 
 template <class POP_TYPE, int POP_DIM, int POP_SIZE, class ERROR_TYPE>
-struct SequentialDE {
-	double kCR_;
-	double kF_;
+struct SequentialDE : public BaseDE<POP_TYPE, POP_DIM, POP_SIZE, ERROR_TYPE> {
 
 	Matrix<POP_TYPE, POP_SIZE, POP_DIM> population_;
 
-	std::function<POP_TYPE()> callback_population_generator_;
-	std::function<uint32_t()> callback_population_picker_;
-	std::function<ERROR_TYPE(const std::array<POP_TYPE,POP_DIM>&)> callback_calc_error_;
-	std::function<bool(const ERROR_TYPE&,const ERROR_TYPE&)> callback_error_evaluation_;
-
-	SequentialDE(
-		std::function<POP_TYPE()>&& callback_population_generator,
-		std::function<uint32_t()>&& callback_population_picker,
-		std::function<ERROR_TYPE(const std::array<POP_TYPE,POP_DIM>&)>&& callback_calc_error,
-		std::function<bool(const ERROR_TYPE&,const ERROR_TYPE&)>&& callback_error_evaluation) :
-			callback_population_generator_{callback_population_generator},
-			callback_population_picker_{callback_population_picker},
-			callback_calc_error_{callback_calc_error},
-			callback_error_evaluation_{callback_error_evaluation} {
+	SequentialDE(const double CR, const double F,
+		const std::function<POP_TYPE()>&& callback_population_generator,
+		const std::function<uint32_t()>&& callback_population_picker,
+		const std::function<ERROR_TYPE(const std::array<POP_TYPE,POP_DIM>&)>&& callback_calc_error,
+		const std::function<bool(const ERROR_TYPE&,const ERROR_TYPE&)>&& callback_error_evaluation) :
+			BaseDE<POP_TYPE, POP_DIM, POP_SIZE, ERROR_TYPE>(
+				CR, F,
+				std::move(callback_population_generator),
+				std::move(callback_population_picker),
+				std::move(callback_calc_error),
+				std::move(callback_error_evaluation)) {
 
 		// Initialize random_cr_
 		using namespace std;
@@ -70,10 +65,19 @@ struct SequentialDE {
 		}
 	}
 
-	std::tuple<ERROR_TYPE,std::array<POP_TYPE,POP_DIM>> getBestCandidate() {
+	void solveNGenerations(const uint32_t N) {
+		for (uint32_t g = 0; g < N; ++g) {
+			for (uint32_t i = 0; i < POP_SIZE; ++g) {
+				mutation(i);
+				select(i);
+			}
+		}
+	}
+
+	std::tuple<ERROR_TYPE,std::array<POP_TYPE,POP_DIM>> getBestCandidate() const {
 		
 		auto e = std::min_element(pop_errors_.begin(), pop_errors_.end(),
-			callback_error_evaluation_);
+			this->callback_error_evaluation_);
 		auto min = std::distance(pop_errors_.begin(), e);
 
 		std::array<POP_TYPE,POP_DIM> r;
@@ -86,7 +90,6 @@ struct SequentialDE {
 
 
 private:
-
 	std::function<double()> random_cr_;
 	std::function<uint32_t()> random_trials_;
 	std::function<uint32_t()> random_j_;
@@ -98,7 +101,7 @@ private:
 	void generatePopulation() {
 		for (uint32_t i = 0; i < POP_SIZE; ++i) {
 			for (int d = 0; d < POP_DIM; ++d) {
-				population_[i][d] = callback_population_generator_();
+				population_[i][d] = this->callback_population_generator_();
 			}
 		}
 	}
@@ -108,7 +111,7 @@ private:
 			for (int d = 0; d < POP_DIM; ++d) {
 				pop_candidate_[d] = population_[i][d];
 			}
-			pop_errors_[i] = callback_calc_error_(pop_candidate_);
+			pop_errors_[i] = this->callback_calc_error_(pop_candidate_);
 		}
 	}
 
@@ -125,12 +128,12 @@ private:
 			pop_trials_[2][d] = population_[it2][d];
 		}
 
-		pop_candidate_[j] = pop_trials_[0][j] + kF_ * (pop_trials_[1][j] - pop_trials_[2][j]);
+		pop_candidate_[j] = pop_trials_[0][j] + this->kF_ * (pop_trials_[1][j] - pop_trials_[2][j]);
 		j = (j + 1) % POP_DIM;
 
 		for (int k = 1; k < POP_DIM; ++k) {
-			if (random_cr_() <= kCR_) {
-				pop_candidate_[j] = pop_trials_[0][j] + kF_ * (pop_trials_[1][j] - pop_trials_[2][j]);
+			if (random_cr_() <= this->kCR_) {
+				pop_candidate_[j] = pop_trials_[0][j] + this->kF_ * (pop_trials_[1][j] - pop_trials_[2][j]);
 		    } else {
 		      	pop_candidate_[j] = population_[actual_index][j];
 		    }
@@ -139,9 +142,9 @@ private:
 	}
 
 	void select(const uint32_t actual_index) {
-		ERROR_TYPE error_new = callback_calc_error_(pop_candidate_);
+		ERROR_TYPE error_new = this->callback_calc_error_(pop_candidate_);
 
-		if (callback_error_evaluation_(error_new, pop_errors_[actual_index])) {
+		if (this->callback_error_evaluation_(error_new, pop_errors_[actual_index])) {
 			for (int d = 0; d < POP_DIM; d++) {
 				population_[actual_index][d] = pop_candidate_[d];
 			}
