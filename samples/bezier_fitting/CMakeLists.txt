@@ -10,6 +10,7 @@ include_directories(${LIBPDEBC_INCLUDE_DIR})
 
 set(SRCS
 	bezier_fitting.cpp
+	BezierCurve.cpp
 )
 
 SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -std=c++11 -stdlib=libc++")
