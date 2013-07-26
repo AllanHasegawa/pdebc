@@ -13,9 +13,13 @@ namespace std {
 struct Vec2 {
 	double x;
 	double y;
+
+	Vec2();
+	Vec2(double, double);
+	~Vec2();
 };
 
-class pypde {
+struct pypde {
 	pypde(const int bezier_control_points,
 		std::vector<Vec2> data_points);
 	~pypde();

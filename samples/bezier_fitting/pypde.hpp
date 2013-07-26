@@ -5,8 +5,17 @@
 #include "BezierCurve.hpp"
 
 struct Vec2 {
-	double x{};
-	double y{};
+	double x;
+	double y;
+
+	Vec2() : x{}, y{} {
+
+	}
+	Vec2(double x, double y) : x{x}, y{y} {
+	}
+	~Vec2() {
+
+	}
 };
 
 #define POPULATION_SIZE 128
