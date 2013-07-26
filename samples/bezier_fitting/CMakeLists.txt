@@ -27,21 +27,18 @@ set(SRCS
 	BezierCurve.cpp
 )
 
-# Hard code for libc++ compiled with libc++rt (Linux)
-# T_T
-SET(LIBCXXRT_LIBRARIES "/usr/local/lib/libcxxrt.so")
-SET(CMAKE_CXX_FLAGS "-std=c++11 -stdlib=libc++")
+SET(CMAKE_CXX_FLAGS "-std=c++11")
 SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG}")
 SET(CMAKE_CXX_FLAGS_RELEASE "-O3 -march=native -pipe -fomit-frame-pointer")
 
 # SWIG CONFIG
-SET_SOURCE_FILES_PROPERTIES(pypde.i PROPERTIES COMPILE_FLAGS "-std=c++11 -stdlib=libc++")
+SET_SOURCE_FILES_PROPERTIES(pypde.i PROPERTIES COMPILE_FLAGS "-std=c++11")
 SET_SOURCE_FILES_PROPERTIES(pypde.i PROPERTIES CPLUSPLUS ON)
 SET_SOURCE_FILES_PROPERTIES(pypde.i PROPERTIES SWIG_FLAGS "-includeall")
 SET_SOURCE_FILES_PROPERTIES(pypde.i PROPERTIES SWIG_FLAGS "-py3")
 SET_SOURCE_FILES_PROPERTIES(pypde.i PROPERTIES SWIG_FLAGS "-c++")
 SWIG_ADD_MODULE(pypde python pypde.i pypde.cpp ${SRCS})
-SWIG_LINK_LIBRARIES(pypde ${PYTHON_LIBRARIES} ${LIBPDEBC_LIBRARY} ${LIBCXXRT_LIBRARIES})
+SWIG_LINK_LIBRARIES(pypde ${PYTHON_LIBRARIES} ${LIBPDEBC_LIBRARY})
 
 add_executable(bezier_fitting ${SRCS})
 target_link_libraries(bezier_fitting ${LIBPDEBC_LIBRARY})
