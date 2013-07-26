@@ -45,7 +45,7 @@ pypde::pypde(const int bezier_control_points,
 
 	vector<std::tuple<double,Vec2d>> dp{};
 	for (int i = 0; i < chord_length.size(); i++) {
-		dp.push_back({chord_length[i],data_points_2dpos[i]});
+		dp.push_back(tuple<double,Vec2d>{chord_length[i],data_points_2dpos[i]});
 	}
 
 	bezier_curve_ = new BezierCurve(dp,

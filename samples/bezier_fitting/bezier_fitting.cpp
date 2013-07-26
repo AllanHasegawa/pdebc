@@ -88,7 +88,7 @@ int main(int argc, char *argv[]) {
 
 	vector<std::tuple<double,Vec2d>> data_points{};
 	for (int i = 0; i < chord_length.size(); i++) {
-		data_points.push_back({chord_length[i],data_points_2dpos[i]});
+		data_points.push_back(std::tuple<double,Vec2d>{chord_length[i],data_points_2dpos[i]});
 	}
 
 	/* lets create the BezierCurve control points */

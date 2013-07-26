@@ -102,7 +102,7 @@ struct SequentialDE : public BaseDE<POP_TYPE, POP_DIM, POP_SIZE, ERROR_TYPE> {
 			r[d] = population_[min][d];
 		}
 
-		return {pop_errors_[min],r};
+		return std::tuple<ERROR_TYPE,std::array<POP_TYPE,POP_DIM>>{pop_errors_[min],r};
 	}
 
 
