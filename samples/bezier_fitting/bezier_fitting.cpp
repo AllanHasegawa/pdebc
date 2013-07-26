@@ -129,6 +129,7 @@ int main(int argc, char *argv[]) {
 				bezier_curve.control_points_[i+1] = arr;
 				return bezier_curve.calcError();
 		};
+
 		des.push_back(SequentialDE{
 			0.5, 0.8,
 			std::move(rand_domain), //std::function<POP_TYPE()>&& callback_population_generator

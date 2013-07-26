@@ -17,8 +17,8 @@ BezierCurve::BezierCurve(
 	const std::vector<Vec2d> control_points
 	) :
 	kNumberControlPoints_{static_cast<uint32_t>(control_points.size())},
-	data_points_{data_points},
-	control_points_{control_points} {
+	data_points_(data_points),
+	control_points_(control_points) {
 	calcBinomialCache();
 }
 
@@ -48,7 +48,8 @@ double BezierCurve::calcError() const {
 	double error{0.0};
 
 	for (auto& p : data_points_) {
-		getCurveInT(get<0>(p), temp_curve_p);
+		double ll = get<0>(p);
+		getCurveInT(ll, temp_curve_p);
 		const double dx = get<1>(p)[0] - temp_curve_p[0];
 		error += dx * dx;
 		const double dy = get<1>(p)[1] - temp_curve_p[1];
