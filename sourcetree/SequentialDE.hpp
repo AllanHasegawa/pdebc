@@ -83,7 +83,7 @@ struct SequentialDE : public BaseDE<POP_TYPE, POP_DIM, POP_SIZE, ERROR_TYPE> {
 		}
 	}
 
-	std::tuple<ERROR_TYPE,std::array<POP_TYPE,POP_DIM>> getBestCandidate() const {
+	std::tuple<ERROR_TYPE,std::array<POP_TYPE,POP_DIM>> getBestCandidate() {
 		
 		auto e = std::min_element(pop_errors_.begin(), pop_errors_.end(),
 			this->callback_error_evaluation_);

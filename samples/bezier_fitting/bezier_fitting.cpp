@@ -29,7 +29,7 @@ Bezier Fitting Sample
 #include <cmath>
 #include <vector>
 
-#include "pdebc/SequentialDE.hpp"
+#include "pdebc/ThreadsDE.hpp"
 
 #include "BezierCurve.hpp"
 /*
@@ -72,8 +72,6 @@ constexpr double DOMAIN_LIMITS = 128;
 
 
 int main(int argc, char *argv[]) {
-	using SequentialDE =
-		pdebc::SequentialDE<POPULATION_TYPE,POPULATION_DIM,POPULATION_SIZE,ERROR_TYPE>;
 	using namespace std;
 
 	/* populate the BezierCurve information */
@@ -102,25 +100,16 @@ int main(int argc, char *argv[]) {
 	bezier_curve.control_points_[0] = data_points_2dpos[0];
 	bezier_curve.control_points_[bezier_curve.control_points_.size()-1]
 		= data_points_2dpos[data_points_2dpos.size()-1];
-
-	/* lets create the callback functions */
-	// generate the population at random
-	random_device rd;
-	mt19937 emt(rd());
-	uniform_real_distribution<POPULATION_TYPE> ud(-DOMAIN_LIMITS, +DOMAIN_LIMITS);
-	auto rand_domain = bind(ud, emt);
-
-	// error evaluations
-	auto error_evaluation =
-		[](const ERROR_TYPE& a, const ERROR_TYPE& b) {
-			return a < b;
-	};
+	
 
 	/* lets create one "DE" algorithm for each control point */
-	vector<SequentialDE> des;
+	
+	using MyThreadsDE =
+		pdebc::ThreadsDE<POPULATION_TYPE,POPULATION_DIM,POPULATION_SIZE,ERROR_TYPE>;
+	vector<shared_ptr<MyThreadsDE>> des;
 	for (int i = 0; i < 2; i++) {
 		// Since I will use the "OptimizationCache"
-		// We will have to update is any time we change
+		// We will have to update it any time we change
 		// control points
 		bezier_curve.updateVariableCPForOptimizationCache(i+1);
 		// each DE will have a unique error calculation function
@@ -128,29 +117,41 @@ int main(int argc, char *argv[]) {
 			[&bezier_curve,i](const array<POPULATION_TYPE, POPULATION_DIM>& arr) -> ERROR_TYPE {
 				return bezier_curve.calcErrorWithOptimizationCache(arr);
 		};
-		
 
-		des.push_back(SequentialDE{
-			0.5, 0.8,
+		/* lets create the callback functions */
+		// generate the population at random
+		random_device rd;
+		mt19937 emt(rd());
+		uniform_real_distribution<POPULATION_TYPE> ud(-DOMAIN_LIMITS, +DOMAIN_LIMITS);
+		auto rand_domain = bind(ud, emt);
+
+		// error evaluations
+		auto error_evaluation =
+			[](const ERROR_TYPE& a, const ERROR_TYPE& b) {
+				return a < b;
+		};
+
+		des.push_back(make_shared<MyThreadsDE>(
+			8, 0.8, 0.5, 0.8,
 			std::move(rand_domain), //std::function<POP_TYPE()>&& callback_population_generator
 			std::move(calc_error), //std::function<ERROR_TYPE(const std::array<POP_TYPE,POP_DIM>&)>&& callback_calc_error
 			std::move(error_evaluation) //std::function<bool(const ERROR_TYPE&,const ERROR_TYPE&)>&& callback_error_evaluation)
-		});
+			));
 	}
 
 
-	for (int i = 0; i < 200; i++) {
+	for (int i = 0; i < 100; i++) {
 		printf("%s\n", string(40,'*').c_str());
 		printf("Generation %d:\n", i);
 		for (int j = 0; j < 2; ++j) {
 			bezier_curve.updateVariableCPForOptimizationCache(j+1);
 			auto& d = des[j];
-			d.solveOneGeneration();
-			auto bc_error = get<0>(d.getBestCandidate());
-			auto bc_point = get<1>(d.getBestCandidate());
+			d->solveOneGeneration();
+			auto bc_error = get<0>(d->getBestCandidate());
+			auto bc_point = get<1>(d->getBestCandidate());
 			printf("Best candidate middle control-point: (%g,%g)\n", bc_point[0], bc_point[1]);
 			printf("Best Candidate error: %g\n", std::sqrt(bc_error));
 			bezier_curve.control_points_[j+1] = bc_point;
 		}
-	}
-}
+	
+}}
