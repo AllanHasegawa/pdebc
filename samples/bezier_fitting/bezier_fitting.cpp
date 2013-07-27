@@ -110,10 +110,6 @@ int main(int argc, char *argv[]) {
 	uniform_real_distribution<POPULATION_TYPE> ud(-DOMAIN_LIMITS, +DOMAIN_LIMITS);
 	auto rand_domain = bind(ud, emt);
 
-	// pick the candidates at random
-	uniform_int_distribution<uint32_t> up(0,POPULATION_SIZE);
-	auto rand_pop = bind(up, emt);
-
 	// error evaluations
 	auto error_evaluation =
 		[](const ERROR_TYPE& a, const ERROR_TYPE& b) {
@@ -137,7 +133,6 @@ int main(int argc, char *argv[]) {
 		des.push_back(SequentialDE{
 			0.5, 0.8,
 			std::move(rand_domain), //std::function<POP_TYPE()>&& callback_population_generator
-			std::move(rand_pop), //std::function<uint32_t()>&& callback_population_picker
 			std::move(calc_error), //std::function<ERROR_TYPE(const std::array<POP_TYPE,POP_DIM>&)>&& callback_calc_error
 			std::move(error_evaluation) //std::function<bool(const ERROR_TYPE&,const ERROR_TYPE&)>&& callback_error_evaluation)
 		});
