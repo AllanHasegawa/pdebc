@@ -9,6 +9,8 @@ set(SRCS
 set(HEADERS
 	SequentialDE.hpp
 	BaseDE.hpp
+	ThreadsDE.hpp
+	ThreadsDESolver.hpp
 )
 
 SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -std=c++11")
