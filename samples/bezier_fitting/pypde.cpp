@@ -62,10 +62,6 @@ pypde::pypde(const int bezier_control_points,
 	uniform_real_distribution<POPULATION_TYPE> ud(-DOMAIN_LIMITS, +DOMAIN_LIMITS);
 	auto rand_domain = bind(ud, emt);
 
-	// pick the candidates at random
-	uniform_int_distribution<uint32_t> up(0,POPULATION_SIZE);
-	auto rand_pop = bind(up, emt);
-
 	// error evaluations
 	auto error_evaluation =
 		[](const ERROR_TYPE& a, const ERROR_TYPE& b) {
@@ -83,7 +79,6 @@ pypde::pypde(const int bezier_control_points,
 		des_.push_back(SequentialDE{
 			0.8, 0.5,
 			std::move(rand_domain),
-			std::move(rand_pop),
 			std::move(calc_error),
 			std::move(error_evaluation)
 		});
