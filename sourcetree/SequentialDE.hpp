@@ -30,9 +30,6 @@
 
 namespace pdebc {
 
-template <class T, unsigned I, unsigned J>
-using Matrix = std::array<std::array<T, J>, I>;
-
 template <class POP_TYPE, int POP_DIM, int POP_SIZE, class ERROR_TYPE>
 struct SequentialDE : public BaseDE<POP_TYPE, POP_DIM, POP_SIZE, ERROR_TYPE> {
 
@@ -136,8 +133,14 @@ private:
 		int j = random_j_();
 
 		const uint32_t it0 = random_trials_();
-		const uint32_t it1 = random_trials_();
-		const uint32_t it2 = random_trials_();
+		uint32_t it1 = random_trials_();
+		while (it1 == it0) {
+			it1 = random_trials_();
+		}
+		uint32_t it2 = random_trials_();
+		while (it2 == it1 || it2 == it0) {
+			it2 = random_trials_();
+		}
 
 		for (int d = 0; d < POP_DIM; d++) {
 			pop_trials_[0][d] = population_[it0][d];
