@@ -51,6 +51,11 @@ pypde::pypde(const int bezier_control_points,
 	bezier_curve_ = new BezierCurve(dp,
 			move(vector<Vec2d>(bezier_control_points))
 		);
+	/* first bezier curve control point == first data point */
+	/* second  "      "     "       "   == second "     "   */
+	bezier_curve_->control_points_[0] = data_points_2dpos[0];
+	bezier_curve_->control_points_[bezier_curve_->control_points_.size()-1]
+		= data_points_2dpos[data_points_2dpos.size()-1];
 
 	random_device rd;
 	mt19937 emt(rd());
@@ -75,7 +80,7 @@ pypde::pypde(const int bezier_control_points,
 				return this->bezier_curve_->calcError();
 		};
 		des_.push_back(SequentialDE{
-			0.5, 0.8,
+			0.8, 0.5,
 			std::move(rand_domain),
 			std::move(rand_pop),
 			std::move(calc_error),

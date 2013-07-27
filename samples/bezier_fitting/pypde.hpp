@@ -22,7 +22,8 @@ struct Vec2 {
 #define POPULATION_DIM 2
 #define POPULATION_TYPE double
 #define ERROR_TYPE double
-#define DOMAIN_LIMITS static_cast<double>(128)
+#define DOMAIN_LIMITS static_cast<double>(64)
+
 
 #define SequentialDE pdebc::SequentialDE<POPULATION_TYPE,POPULATION_DIM,POPULATION_SIZE,ERROR_TYPE>
 
