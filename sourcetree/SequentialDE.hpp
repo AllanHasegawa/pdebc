@@ -37,13 +37,11 @@ struct SequentialDE : public BaseDE<POP_TYPE, POP_DIM, POP_SIZE, ERROR_TYPE> {
 
 	SequentialDE(const double CR, const double F,
 		const std::function<POP_TYPE()>&& callback_population_generator,
-		const std::function<uint32_t()>&& callback_population_picker,
 		const std::function<ERROR_TYPE(const std::array<POP_TYPE,POP_DIM>&)>&& callback_calc_error,
 		const std::function<bool(const ERROR_TYPE&,const ERROR_TYPE&)>&& callback_error_evaluation) :
 			BaseDE<POP_TYPE, POP_DIM, POP_SIZE, ERROR_TYPE>(
 				CR, F,
 				std::move(callback_population_generator),
-				std::move(callback_population_picker),
 				std::move(callback_calc_error),
 				std::move(callback_error_evaluation)) {
 
@@ -81,10 +79,7 @@ struct SequentialDE : public BaseDE<POP_TYPE, POP_DIM, POP_SIZE, ERROR_TYPE> {
 
 	void solveNGenerations(const uint32_t N) {
 		for (uint32_t g = 0; g < N; ++g) {
-			for (uint32_t i = 0; i < POP_SIZE; ++g) {
-				mutation(i);
-				select(i);
-			}
+			solveOneGeneration();
 		}
 	}
 
