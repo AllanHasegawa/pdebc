@@ -123,12 +123,16 @@ int main(int argc, char *argv[]) {
 	/* lets create one "DE" algorithm for each control point */
 	vector<SequentialDE> des;
 	for (int i = 0; i < 2; i++) {
+		// Since I will use the "OptimizationCache"
+		// We will have to update is any time we change
+		// control points
+		bezier_curve.updateVariableCPForOptimizationCache(i+1);
 		// each DE will have a unique error calculation function
 		auto calc_error =
 			[&bezier_curve,i](const array<POPULATION_TYPE, POPULATION_DIM>& arr) -> ERROR_TYPE {
-				bezier_curve.control_points_[i+1] = arr;
-				return bezier_curve.calcError();
+				return bezier_curve.calcErrorWithOptimizationCache(arr);
 		};
+		
 
 		des.push_back(SequentialDE{
 			0.5, 0.8,
@@ -144,6 +148,7 @@ int main(int argc, char *argv[]) {
 		printf("%s\n", string(40,'*').c_str());
 		printf("Generation %d:\n", i);
 		for (int j = 0; j < 2; ++j) {
+			bezier_curve.updateVariableCPForOptimizationCache(j+1);
 			auto& d = des[j];
 			d.solveOneGeneration();
 			auto bc_error = get<0>(d.getBestCandidate());

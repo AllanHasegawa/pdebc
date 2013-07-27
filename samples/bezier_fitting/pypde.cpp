@@ -74,6 +74,7 @@ pypde::pypde(const int bezier_control_points,
 
 	
 	for (int i = 0; i < 2; i++) {
+		bezier_curve_->updateVariableCPForOptimizationCache(i+1);
 		auto calc_error =
 			[this,i](const array<POPULATION_TYPE, POPULATION_DIM>& arr) -> ERROR_TYPE {
 				this->bezier_curve_->control_points_[i+1] = arr;
@@ -96,6 +97,7 @@ pypde::~pypde() {
 void pypde::solveOneGeneration()  {
 	using namespace std;
 	for (int j = 0; j < 2; ++j) {
+		bezier_curve_->updateVariableCPForOptimizationCache(j+1);
 		auto& d = des_[j];
 		d.solveOneGeneration();
 		//auto bc_error = get<0>(d.getBestCandidate());
