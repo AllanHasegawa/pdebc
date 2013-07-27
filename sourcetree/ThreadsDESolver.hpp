@@ -19,6 +19,14 @@
 #ifndef THREADSDESOLVER_H_
 #define THREADSDESOLVER_H_
 
+#include <thread>
+#include <random>
+#include <mutex>
+#include <condition_variable>
+#include <algorithm>
+ 
+#include "BaseDE.hpp"
+
 namespace pdebc {
 
 enum class WorkType {
@@ -30,21 +38,21 @@ template <class POP_TYPE, int POP_DIM, int POP_SIZE, class ERROR_TYPE>
 struct ThreadsDESolver {
 
 	const int kID_;
-	const uint32_t kPopSize_;
-	ThreadsDE& threads_de_;
+	BaseDE<POP_TYPE,POP_DIM,POP_SIZE,ERROR_TYPE>* base_de_;
 
 	Matrix<POP_TYPE, POP_SIZE, POP_DIM> population_;
 
-	ThreadsDESolver(const int id, const uint32_t pop_size, ThreadsDE& threads_de)
-		: kID_{id}, kPopSize_{pop_size}, threads_de_{threads_de} {
-
+	ThreadsDESolver(const int id,
+		BaseDE<POP_TYPE,POP_DIM,POP_SIZE,ERROR_TYPE>* base_de)
+		: kID_{id}, base_de_{base_de}, finish_{false}, pending_work_{false},
+			work_ready_{false} {
 	}
 	~ThreadsDESolver() {
-
 	}
 
 	void start() {
-		thread_ = std::thread(&ThreadsDESolver::run, this);
+		using MyThreadsDESolver = pdebc::ThreadsDESolver<POP_TYPE,POP_DIM,POP_SIZE,ERROR_TYPE>;
+		thread_ = std::thread(&MyThreadsDESolver::run,this);
 	}
 
 	void join() {
@@ -58,7 +66,7 @@ struct ThreadsDESolver {
 
 	void solveOneGeneration() {
 		using namespace std;
-		lock_guard<mutex> lock(mutex_);
+		unique_lock<mutex> lock(mutex_);
 		pending_work_ = true;
 		work_ready_ = false;
 		work_type_ = WorkType::SOLVE_GENERATION;
@@ -67,7 +75,7 @@ struct ThreadsDESolver {
 
 	void solveBestCandidate() {
 		using namespace std;
-		lock_guard<mutex> lock(mutex_);
+		unique_lock<mutex> lock(mutex_);
 		pending_work_ = true;
 		work_ready_ = false;
 		work_type_ = WorkType::GET_BEST_CANDIDATE;
@@ -108,37 +116,37 @@ private:
 
 	void run() {
 
+		using namespace std;
 		{ // this scope will be called only once
 			// Initialize random_cr_
-			using namespace std;
-			random_device rd;
-			mt19937 emt(rd());
+			mt19937 emt;
 			uniform_real_distribution<double> ud(0.0, 1.0);
 			random_cr_ = bind(ud, emt);
-
 			// Initialize random_trials_
-			mt19937 emt2(rd());
+			mt19937 emt2;
 			uniform_int_distribution<uint32_t> ui2(0, POP_SIZE-1);
 			random_trials_ = bind(ui2, emt2);
 
 			// Initialize random_j_
-			mt19937 emt3(rd());
-			uniform_int_distribution<uint32_t> ui3(0.0, POP_DIM-1);
+			mt19937 emt3;
+			uniform_int_distribution<uint32_t> ui3(0, POP_DIM-1);
 			random_j_ = bind(ui3, emt3);
 
 			generatePopulation();
 			calcGenerationError();
 		}
 
+		int work{0};
 		while (!finish_) {
 			// non-busy wait for more work
 			unique_lock<mutex> lock(mutex_);
-			cond_.wait(lock, [&]() {return this->pending_work_;});
-			//printf("Work! %d\n", work++);
+			cond_.wait(lock, [this]() {return this->pending_work_;});
 			lock.unlock();
+
 			if (finish_) {
 				continue;
 			}
+
 
 			if (work_type_ == WorkType::SOLVE_GENERATION) {
 				for (uint32_t i = 0; i < POP_SIZE; ++i) {
@@ -147,7 +155,7 @@ private:
 				}
 			} else if (work_type_ == WorkType::GET_BEST_CANDIDATE) {
 				auto e = std::min_element(pop_errors_.begin(), pop_errors_.end(),
-				this->callback_error_evaluation_);
+				base_de_->callback_error_evaluation_);
 				auto min = std::distance(pop_errors_.begin(), e);
 
 				std::array<POP_TYPE,POP_DIM> r;
@@ -158,7 +166,9 @@ private:
 				best_candidate_ = std::tuple<ERROR_TYPE,std::array<POP_TYPE,POP_DIM>>{pop_errors_[min],r};
 			}
 
+
 			// Lets tell everyone we are DONE! <sigh>
+			///   Need a full cycle to call it done!
 			pending_work_ = false;
 			lock_guard<mutex> work_read_lock(work_ready_lock_);
 			work_ready_ = true;
@@ -169,7 +179,7 @@ private:
 	void generatePopulation() {
 		for (uint32_t i = 0; i < POP_SIZE; ++i) {
 			for (int d = 0; d < POP_DIM; ++d) {
-				population_[i][d] = this->callback_population_generator_();
+				population_[i][d] = base_de_->callback_population_generator_();
 			}
 		}
 	}
@@ -179,7 +189,7 @@ private:
 			for (int d = 0; d < POP_DIM; ++d) {
 				pop_candidate_[d] = population_[i][d];
 			}
-			pop_errors_[i] = this->callback_calc_error_(pop_candidate_);
+			pop_errors_[i] = base_de_->callback_calc_error_(pop_candidate_);
 		}
 	}
 
@@ -202,12 +212,12 @@ private:
 			pop_trials_[2][d] = population_[it2][d];
 		}
 
-		pop_candidate_[j] = pop_trials_[0][j] + this->kF_ * (pop_trials_[1][j] - pop_trials_[2][j]);
+		pop_candidate_[j] = pop_trials_[0][j] + base_de_->kF_ * (pop_trials_[1][j] - pop_trials_[2][j]);
 		j = (j + 1) % POP_DIM;
 
 		for (int k = 1; k < POP_DIM; ++k) {
-			if (random_cr_() <= this->kCR_) {
-				pop_candidate_[j] = pop_trials_[0][j] + this->kF_ * (pop_trials_[1][j] - pop_trials_[2][j]);
+			if (random_cr_() <= base_de_->kCR_) {
+				pop_candidate_[j] = pop_trials_[0][j] + base_de_->kF_ * (pop_trials_[1][j] - pop_trials_[2][j]);
 		    } else {
 		      	pop_candidate_[j] = population_[actual_index][j];
 		    }
@@ -217,9 +227,9 @@ private:
 	
 
 	void select(const uint32_t actual_index) {
-		ERROR_TYPE error_new = this->callback_calc_error_(pop_candidate_);
+		ERROR_TYPE error_new = base_de_->callback_calc_error_(pop_candidate_);
 
-		if (this->callback_error_evaluation_(error_new, pop_errors_[actual_index])) {
+		if (base_de_->callback_error_evaluation_(error_new, pop_errors_[actual_index])) {
 			for (int d = 0; d < POP_DIM; d++) {
 				population_[actual_index][d] = pop_candidate_[d];
 			}

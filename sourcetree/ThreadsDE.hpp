@@ -20,6 +20,7 @@
 #include <limits>
 #include <functional>
 #include <tuple>
+#include <algorithm>
 
 #include "BaseDE.hpp"
 #include "ThreadsDESolver.hpp"
@@ -35,33 +36,33 @@ struct ThreadsDE : public BaseDE<POP_TYPE, POP_DIM, POP_SIZE, ERROR_TYPE> {
 	ThreadsDE(const uint32_t n_process, const double migration_phi,
 		const double CR, const double F,
 		const std::function<POP_TYPE()>&& callback_population_generator,
-		const std::function<uint32_t()>&& callback_population_picker,
 		const std::function<ERROR_TYPE(const std::array<POP_TYPE,POP_DIM>&)>&& callback_calc_error,
 		const std::function<bool(const ERROR_TYPE&,const ERROR_TYPE&)>&& callback_error_evaluation) :
+			kNProcess_{n_process}, kMigrationPhi_{migration_phi},
 			BaseDE<POP_TYPE, POP_DIM, POP_SIZE, ERROR_TYPE>(
-				kNProcess_{n_process}, kMigrationPhi_{migration_phi}, CR, F,
+				CR, F,
 				std::move(callback_population_generator),
-				std::move(callback_population_picker),
 				std::move(callback_calc_error),
 				std::move(callback_error_evaluation)) {
 
 		// Initialize random functions for the
 		// migration step...
 		using namespace std;
-		random_device rd;
-		mt19937 emt(rd());
+		mt19937 emt;
 		uniform_real_distribution<double> ud(0.0, 1.0);
 		random_phi_ = bind(ud, emt);
 
-		mt19937 emt2(rd());
+		mt19937 emt2;
 		uniform_int_distribution<uint32_t> ui2(0, POP_SIZE-1);
 		random_migration_index_ = bind(ui2, emt2);
 
 		// Initialize each solver...
-  		using ThreadsDESolver = pdebc::ThreadsDESolver<POP_TYPE,POP_DIM,POP_SIZE,ERROR_TYPE>;
+  		using MyThreadsDESolver = pdebc::ThreadsDESolver<POP_TYPE,POP_DIM,POP_SIZE,ERROR_TYPE>;
+  		using MyBaseDE = pdebc::BaseDE<POP_TYPE,POP_DIM,POP_SIZE,ERROR_TYPE>;
 		for (int k = 0; k < kNProcess_; k++) {
-			solvers_.push_back(ThreadsDESolver{k,this});
+			auto solver = shared_ptr<MyThreadsDESolver>(new MyThreadsDESolver(k,this));
 			solver->start();
+			solvers_.push_back(solver);
 		}
 	}
 
@@ -69,6 +70,7 @@ struct ThreadsDE : public BaseDE<POP_TYPE, POP_DIM, POP_SIZE, ERROR_TYPE> {
 		for (auto& i : solvers_) {
     		i->join();
   		}
+  		solvers_.clear();
 	}
 
 	void solveOneGeneration() {
@@ -87,7 +89,7 @@ struct ThreadsDE : public BaseDE<POP_TYPE, POP_DIM, POP_SIZE, ERROR_TYPE> {
 		}
 	}
 
-	std::tuple<ERROR_TYPE,std::array<POP_TYPE,POP_DIM>> getBestCandidate() const {
+	std::tuple<ERROR_TYPE,std::array<POP_TYPE,POP_DIM>> getBestCandidate() {
 		using namespace std;
 
 		for (auto& s : solvers_) {
@@ -97,7 +99,7 @@ struct ThreadsDE : public BaseDE<POP_TYPE, POP_DIM, POP_SIZE, ERROR_TYPE> {
 			s->waitWork();
 		}
 
-		double min_error = numerial_limits<double>::max();
+		double min_error = numeric_limits<double>::max();
 		array<POP_TYPE,POP_DIM> min_error_pos;
 		for (auto& s : solvers_) {
 			auto bc = s->getBestCandidate();
@@ -113,7 +115,7 @@ struct ThreadsDE : public BaseDE<POP_TYPE, POP_DIM, POP_SIZE, ERROR_TYPE> {
 private:
 	std::function<double()> random_phi_;
 	std::function<uint32_t()> random_migration_index_;
-	std::vector<ThreadsDESolver> solvers_;
+	std::vector<std::shared_ptr<ThreadsDESolver<POP_TYPE,POP_DIM,POP_SIZE,ERROR_TYPE>>> solvers_;
 
 	// new step for the parallel solution ;)
 	void migration() {
@@ -128,9 +130,9 @@ private:
 
 		for (int i = 0; i < solvers_.size(); ++i) {
 			if (random_phi_() < kMigrationPhi_) {
-				auto bc = s[i].getBestCandidate();
+				auto bc = get<1>(solvers_[i]->getBestCandidate());
 				const uint32_t mi = random_migration_index_();
-				solvers_[(i+1)%solvers_.size()].population_[mi] = bc;
+				solvers_[(i+1)%solvers_.size()]->population_[mi] = bc;
 			}
 		}
 	}
