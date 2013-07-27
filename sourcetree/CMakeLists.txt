@@ -11,8 +11,8 @@ set(HEADERS
 	BaseDE.hpp
 )
 
-SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -std=c++11 -stdlib=libc++")
-SET(CMAKE_CXX_FLAGS_RELEASE "-O3 -march=native -pipe -fomit-frame-pointer -std=c++11 -stdlib=libc++")
+SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -std=c++11")
+SET(CMAKE_CXX_FLAGS_RELEASE "-O3 -march=native -pipe -fomit-frame-pointer -std=c++11")
 add_library(pdebc SHARED ${SRCS})
 
 install (TARGETS pdebc DESTINATION lib/pdebc)

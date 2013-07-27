@@ -13,13 +13,13 @@ std::array<std::array<double, BezierCurve::kMaxControlPoints>, BezierCurve::kMax
 
 
 BezierCurve::BezierCurve(
-const std::vector<std::tuple<double,Vec2d>>& data_points,
-const std::vector<Vec2d> control_points
-) :
-kNumberControlPoints_{static_cast<uint32_t>(control_points.size())},
-data_points_{data_points},
-control_points_{control_points} {
-calcBinomialCache();
+	const std::vector<std::tuple<double,Vec2d>>& data_points,
+	const std::vector<Vec2d> control_points
+	) :
+	kNumberControlPoints_{static_cast<uint32_t>(control_points.size())},
+	data_points_(data_points),
+	control_points_(control_points) {
+	calcBinomialCache();
 }
 
 BezierCurve::~BezierCurve() {
@@ -31,15 +31,15 @@ void BezierCurve::getCurveInT(const double parameterization_value, Vec2d& out) c
 	double Bx = 0;
 	double By = 0;
 	for (int i = 0; i < kNumberControlPoints_; i++) {
-	const double p1 = pow(parameterization_value, i);
-	const double p2 = pow(1 - parameterization_value, n - i);
-	const double b = binomial_cache_[n][i] * p1 * p2;
-	const Vec2d& v = control_points_[i];
-	Bx += b * v[0];
-	By += b * v[1];
-}
-out[0] = Bx;
-out[1] = By;
+		const double p1 = pow(parameterization_value, i);
+		const double p2 = pow(1 - parameterization_value, n - i);
+		const double b = binomial_cache_[n][i] * p1 * p2;
+		const Vec2d& v = control_points_[i];
+		Bx += b * v[0];
+		By += b * v[1];
+	}
+	out[0] = Bx;
+	out[1] = By;
 }
 
 double BezierCurve::calcError() const {
@@ -48,7 +48,8 @@ double BezierCurve::calcError() const {
 	double error{0.0};
 
 	for (auto& p : data_points_) {
-		getCurveInT(get<0>(p), temp_curve_p);
+		double ll = get<0>(p);
+		getCurveInT(ll, temp_curve_p);
 		const double dx = get<1>(p)[0] - temp_curve_p[0];
 		error += dx * dx;
 		const double dy = get<1>(p)[1] - temp_curve_p[1];

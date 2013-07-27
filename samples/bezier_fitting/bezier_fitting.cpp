@@ -88,7 +88,7 @@ int main(int argc, char *argv[]) {
 
 	vector<std::tuple<double,Vec2d>> data_points{};
 	for (int i = 0; i < chord_length.size(); i++) {
-		data_points.push_back({chord_length[i],data_points_2dpos[i]});
+		data_points.push_back(std::tuple<double,Vec2d>{chord_length[i],data_points_2dpos[i]});
 	}
 
 	/* lets create the BezierCurve control points */
@@ -129,6 +129,7 @@ int main(int argc, char *argv[]) {
 				bezier_curve.control_points_[i+1] = arr;
 				return bezier_curve.calcError();
 		};
+
 		des.push_back(SequentialDE{
 			0.5, 0.8,
 			std::move(rand_domain), //std::function<POP_TYPE()>&& callback_population_generator
