@@ -21,6 +21,7 @@
 #include <functional>
 #include <tuple>
 #include <algorithm>
+#include <chrono>
 
 #include "BaseDE.hpp"
 #include "ThreadsDESolver.hpp"
@@ -48,28 +49,25 @@ struct ThreadsDE : public BaseDE<POP_TYPE, POP_DIM, POP_SIZE, ERROR_TYPE> {
 		// Initialize random functions for the
 		// migration step...
 		using namespace std;
-		mt19937 emt;
+		auto t1 = chrono::high_resolution_clock::now().time_since_epoch();
+		mt19937 emt(chrono::duration_cast<chrono::nanoseconds>(t1).count());
 		uniform_real_distribution<double> ud(0.0, 1.0);
 		random_phi_ = bind(ud, emt);
 
-		mt19937 emt2;
+		t1 = chrono::high_resolution_clock::now().time_since_epoch();
+		mt19937 emt2(chrono::duration_cast<chrono::nanoseconds>(t1).count());
 		uniform_int_distribution<uint32_t> ui2(0, POP_SIZE-1);
 		random_migration_index_ = bind(ui2, emt2);
 
 		// Initialize each solver...
   		using MyThreadsDESolver = pdebc::ThreadsDESolver<POP_TYPE,POP_DIM,POP_SIZE,ERROR_TYPE>;
-  		using MyBaseDE = pdebc::BaseDE<POP_TYPE,POP_DIM,POP_SIZE,ERROR_TYPE>;
 		for (int k = 0; k < kNProcess_; k++) {
 			auto solver = shared_ptr<MyThreadsDESolver>(new MyThreadsDESolver(k,this));
-			solver->start();
 			solvers_.push_back(solver);
 		}
 	}
 
 	~ThreadsDE() {
-		for (auto& i : solvers_) {
-    		i->join();
-  		}
   		solvers_.clear();
 	}
 
@@ -95,19 +93,18 @@ struct ThreadsDE : public BaseDE<POP_TYPE, POP_DIM, POP_SIZE, ERROR_TYPE> {
 		for (auto& s : solvers_) {
 			s->solveBestCandidate();
 		}
+		solvers_[0]->waitWork();
+		double min_error = get<0>(solvers_[0]->getBestCandidate());
+		array<POP_TYPE,POP_DIM> min_error_pos = get<1>(solvers_[0]->getBestCandidate());;
+		/*
 		for (auto& s : solvers_) {
 			s->waitWork();
-		}
-
-		double min_error = numeric_limits<double>::max();
-		array<POP_TYPE,POP_DIM> min_error_pos;
-		for (auto& s : solvers_) {
 			auto bc = s->getBestCandidate();
 			if (get<0>(bc) < min_error) {
 				min_error = get<0>(bc);
 				min_error_pos = get<1>(bc);
 			}
-		}
+		}*/
 
 		return std::tuple<ERROR_TYPE,std::array<POP_TYPE,POP_DIM>>{min_error,min_error_pos};
 	}
@@ -124,12 +121,10 @@ private:
 		for (auto& s : solvers_) {
 			s->solveBestCandidate();
 		}
-		for (auto& s : solvers_) {
-			s->waitWork();
-		}
 
 		for (int i = 0; i < solvers_.size(); ++i) {
 			if (random_phi_() < kMigrationPhi_) {
+				solvers_[i]->waitWork();
 				auto bc = get<1>(solvers_[i]->getBestCandidate());
 				const uint32_t mi = random_migration_index_();
 				solvers_[(i+1)%solvers_.size()]->population_[mi] = bc;

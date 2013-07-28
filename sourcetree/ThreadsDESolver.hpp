@@ -46,16 +46,11 @@ struct ThreadsDESolver {
 		BaseDE<POP_TYPE,POP_DIM,POP_SIZE,ERROR_TYPE>* base_de)
 		: kID_{id}, base_de_{base_de}, finish_{false}, pending_work_{false},
 			work_ready_{false} {
-	}
-	~ThreadsDESolver() {
-	}
 
-	void start() {
 		using MyThreadsDESolver = pdebc::ThreadsDESolver<POP_TYPE,POP_DIM,POP_SIZE,ERROR_TYPE>;
 		thread_ = std::thread(&MyThreadsDESolver::run,this);
 	}
-
-	void join() {
+	~ThreadsDESolver() {
 		std::unique_lock<std::mutex> lock(mutex_);
 		pending_work_ = true;
 		finish_ = true;
@@ -119,16 +114,20 @@ private:
 		using namespace std;
 		{ // this scope will be called only once
 			// Initialize random_cr_
-			mt19937 emt;
+			auto t1 = chrono::high_resolution_clock::now().time_since_epoch();
+			mt19937 emt(chrono::duration_cast<chrono::nanoseconds>(t1).count());
 			uniform_real_distribution<double> ud(0.0, 1.0);
 			random_cr_ = bind(ud, emt);
+
 			// Initialize random_trials_
-			mt19937 emt2;
+			t1 = chrono::high_resolution_clock::now().time_since_epoch();
+			mt19937 emt2(chrono::duration_cast<chrono::nanoseconds>(t1).count());
 			uniform_int_distribution<uint32_t> ui2(0, POP_SIZE-1);
 			random_trials_ = bind(ui2, emt2);
 
 			// Initialize random_j_
-			mt19937 emt3;
+			t1 = chrono::high_resolution_clock::now().time_since_epoch();
+			mt19937 emt3(chrono::duration_cast<chrono::nanoseconds>(t1).count());
 			uniform_int_distribution<uint32_t> ui3(0, POP_DIM-1);
 			random_j_ = bind(ui3, emt3);
 
@@ -136,7 +135,6 @@ private:
 			calcGenerationError();
 		}
 
-		int work{0};
 		while (!finish_) {
 			// non-busy wait for more work
 			unique_lock<mutex> lock(mutex_);
@@ -158,10 +156,7 @@ private:
 				base_de_->callback_error_evaluation_);
 				auto min = std::distance(pop_errors_.begin(), e);
 
-				std::array<POP_TYPE,POP_DIM> r;
-				for (int d = 0; d < POP_DIM; d++) {
-					r[d] = population_[min][d];
-				}
+				std::array<POP_TYPE,POP_DIM> r = population_[min];
 
 				best_candidate_ = std::tuple<ERROR_TYPE,std::array<POP_TYPE,POP_DIM>>{pop_errors_[min],r};
 			}
