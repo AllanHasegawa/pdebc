@@ -1,8 +1,6 @@
 pdebc - Parallel Differential Evolution Bezier Curve
 =====
 
-This project implements a parallel solution for the problem of curve fitting.
-This project solves the problem of aproximation curve fitting using the Differential Evolution algorithm.
+pdebc implements a parallel version of the algorithm Differential Evolution. It tries to be as generic as possible to work with different data types.
 
-
-Note: Sorry about the hard to read code, it's the result of many optimizations done with the help of Callgrind.
+I'll update more info here (maybe a proper documentation) if anyone is interested...
