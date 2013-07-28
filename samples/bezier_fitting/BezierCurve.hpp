@@ -15,12 +15,12 @@ struct BezierCurve {
 	std::array<std::array<double, kMaxControlPoints>, kMaxControlPoints> binomial_cache_;
 
 	const uint32_t kNumberControlPoints_;
-	const std::vector<std::tuple<double,Vec2d>>& data_points_;
+	const std::vector<std::tuple<double,Vec2d>> data_points_;
 	std::vector<Vec2d> control_points_;
 
 
 	BezierCurve(
-		const std::vector<std::tuple<double,Vec2d>>& data_points,
+		const std::vector<std::tuple<double,Vec2d>> data_points,
 		const std::vector<Vec2d> control_points
 		);
 

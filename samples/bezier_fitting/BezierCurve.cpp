@@ -11,18 +11,17 @@
 
 
 BezierCurve::BezierCurve(
-	const std::vector<std::tuple<double,Vec2d>>& data_points,
+	const std::vector<std::tuple<double,Vec2d>> data_points,
 	const std::vector<Vec2d> control_points) :
 		kNumberControlPoints_{static_cast<uint32_t>(control_points.size())},
-		data_points_(data_points),
-		control_points_(control_points) {
+		data_points_{data_points},
+		control_points_{control_points} {
 	
 	initializeOptimizationCache();
 
 }
 
 BezierCurve::~BezierCurve() {
-
 }
 
 void BezierCurve::getCurveInT(const double parameterization_value, Vec2d& out) const {
