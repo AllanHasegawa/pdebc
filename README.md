@@ -1,8 +1,10 @@
-pdebc - Parallel Differential Evolution Bezier Curve
+pdebc
 =====
 
-This project implements a parallel solution for the problem of curve fitting.
-This project solves the problem of aproximation curve fitting using the Differential Evolution algorithm.
+pdebc implements a parallel version of the Differential Evolution algorithm. It tries to be as generic as possible to work with different data types.
 
+In the "samples" I placed two implementations. "Point Fitting" and "Bezier Fitting".
+-> The Point Fitting should be used as a starting framework. It shows a very basic working code.
+-> The Bezier Fitting is a more complex sample, demonstrating the parallel implementation and a python interface. Included in this sample is an ipython3 notebook containing a bezier curve fitting using matplotlib and pdebc.
 
-Note: Sorry about the hard to read code, it's the result of many optimizations done with the help of Callgrind.
+I'll add more info here (maybe a proper documentation) if anyone is interested...
