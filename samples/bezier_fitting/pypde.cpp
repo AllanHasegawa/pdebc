@@ -4,6 +4,9 @@
 #include <memory>
 #include <tuple>
 
+#include "pdebc/ThreadsDE.hpp"
+
+
 
 std::vector<double> calcChordLengthSwig(const std::vector<Vec2d>& data_points) {
 	using namespace std;
@@ -32,7 +35,7 @@ std::vector<double> calcChordLengthSwig(const std::vector<Vec2d>& data_points) {
 	return chord_length;
 }
 
-pypde::pypde(const int bezier_control_points,
+pypde::pypde(const int n_processes, const int bezier_control_points,
 		std::vector<Vec2> data_points) {
 	using namespace std;
 	vector<Vec2d> data_points_2dpos;
@@ -57,31 +60,35 @@ pypde::pypde(const int bezier_control_points,
 	bezier_curve_->control_points_[bezier_curve_->control_points_.size()-1]
 		= data_points_2dpos[data_points_2dpos.size()-1];
 
-	random_device rd;
-	mt19937 emt(rd());
-	uniform_real_distribution<POPULATION_TYPE> ud(-DOMAIN_LIMITS, +DOMAIN_LIMITS);
-	auto rand_domain = bind(ud, emt);
-
-	// error evaluations
-	auto error_evaluation =
-		[](const ERROR_TYPE& a, const ERROR_TYPE& b) {
-			return a < b;
-	};
-
-	
-	for (int i = 0; i < 2; i++) {
+	/* -2 because we dont try to fit the first and last control point */
+	for (int i = 0; i < bezier_control_points-2; i++) {
 		bezier_curve_->updateVariableCPForOptimizationCache(i+1);
+
+		// population generator
+		auto t1 = chrono::high_resolution_clock::now().time_since_epoch();
+		mt19937 emt(chrono::duration_cast<chrono::nanoseconds>(t1).count());
+		uniform_real_distribution<POPULATION_TYPE> ud(-DOMAIN_LIMITS, +DOMAIN_LIMITS);
+		auto rand_domain = bind(ud, emt);
+
+		// error evaluations
+		auto error_evaluation =
+			[](const ERROR_TYPE& a, const ERROR_TYPE& b) {
+				return a < b;
+		};
+
+		// error calculation
 		auto calc_error =
 			[this,i](const array<POPULATION_TYPE, POPULATION_DIM>& arr) -> ERROR_TYPE {
-				this->bezier_curve_->control_points_[i+1] = arr;
-				return this->bezier_curve_->calcError();
+				return this->bezier_curve_->calcErrorWithOptimizationCache(arr);
 		};
-		des_.push_back(SequentialDE{
-			0.8, 0.5,
+		
+		
+		des_.push_back(make_shared<PYPDE_ThreadsDE>(
+			n_processes, 1, 0.5, 0.8,
 			std::move(rand_domain),
 			std::move(calc_error),
 			std::move(error_evaluation)
-		});
+		));
 	}
 }
 
@@ -89,14 +96,15 @@ pypde::~pypde() {
 	delete bezier_curve_;
 }
 
+
 void pypde::solveOneGeneration()  {
 	using namespace std;
-	for (int j = 0; j < 2; ++j) {
+	for (int j = 0; j < des_.size(); ++j) {
 		bezier_curve_->updateVariableCPForOptimizationCache(j+1);
 		auto& d = des_[j];
-		d.solveOneGeneration();
+		d->solveOneGeneration();
 		//auto bc_error = get<0>(d.getBestCandidate());
-		auto bc_point = get<1>(d.getBestCandidate());
+		auto bc_point = get<1>(d->getBestCandidate());
 		//printf("Best candidate middle control-point: (%g,%g)\n", bc_point[0], bc_point[1]);
 		//printf("Best Candidate error: %g\n", std::sqrt(bc_error));
 		bezier_curve_->control_points_[j+1] = bc_point;
@@ -104,12 +112,12 @@ void pypde::solveOneGeneration()  {
 }
 
 double pypde::getBestCandidateError(int i) {
-	return std::get<0>(des_[i].getBestCandidate());
+	return std::get<0>(des_[i]->getBestCandidate());
 }
 
 std::vector<double> pypde::getBestCandidateCP(int i) {
 	std::vector<double> v(2);
-	auto p = std::get<1>(des_[i].getBestCandidate());
+	auto p = std::get<1>(des_[i]->getBestCandidate());
 	v[0] = p[0];
 	v[1] = p[1];
 	return v;

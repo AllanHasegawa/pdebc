@@ -1,7 +1,8 @@
 
 #include <vector>
+#include <memory>
 
-#include "pdebc/SequentialDE.hpp"
+#include "pdebc/ThreadsDE.hpp"
 #include "BezierCurve.hpp"
 
 struct Vec2 {
@@ -24,14 +25,13 @@ struct Vec2 {
 #define ERROR_TYPE double
 #define DOMAIN_LIMITS static_cast<double>(64)
 
-
-#define SequentialDE pdebc::SequentialDE<POPULATION_TYPE,POPULATION_DIM,POPULATION_SIZE,ERROR_TYPE>
+using PYPDE_ThreadsDE = pdebc::ThreadsDE<POPULATION_TYPE,POPULATION_DIM,POPULATION_SIZE,ERROR_TYPE>;
 
 struct pypde {
 	BezierCurve* bezier_curve_;
-	std::vector<SequentialDE> des_;
+	std::vector<std::shared_ptr<PYPDE_ThreadsDE>> des_;
 
-	pypde(const int bezier_control_points,
+	pypde(const int n_processes, const int bezier_control_points,
 		std::vector<Vec2> data_points);
 
 	~pypde();
