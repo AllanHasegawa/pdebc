@@ -20,7 +20,8 @@ struct Vec2 {
 };
 
 struct pypde {
-	pypde(const int n_processes, const int bezier_control_points,
+	pypde(const int n_processes, const int population_size,
+		const int bezier_control_points,
 		std::vector<Vec2> data_points);
 	~pypde();
 	void solveOneGeneration();

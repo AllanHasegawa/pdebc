@@ -30,21 +30,26 @@
 
 namespace pdebc {
 
-template <class POP_TYPE, int POP_DIM, int POP_SIZE, class ERROR_TYPE>
-struct SequentialDE : public BaseDE<POP_TYPE, POP_DIM, POP_SIZE, ERROR_TYPE> {
+template <class POP_TYPE, int POP_DIM, class ERROR_TYPE>
+struct SequentialDE : public BaseDE<POP_TYPE, POP_DIM, ERROR_TYPE> {
 
-	Matrix<POP_TYPE, POP_SIZE, POP_DIM> population_;
+	const uint32_t kPopSize_;
+	std::vector<std::array<POP_TYPE,POP_DIM>> population_;
 
-	SequentialDE(const double CR, const double F,
+	SequentialDE(const uint32_t POP_SIZE, const double CR, const double F,
 		const std::function<POP_TYPE()>&& callback_population_generator,
 		const std::function<ERROR_TYPE(const std::array<POP_TYPE,POP_DIM>&)>&& callback_calc_error,
 		const std::function<bool(const ERROR_TYPE&,const ERROR_TYPE&)>&& callback_error_evaluation) :
-			BaseDE<POP_TYPE, POP_DIM, POP_SIZE, ERROR_TYPE>(
+			kPopSize_{POP_SIZE},
+			BaseDE<POP_TYPE, POP_DIM, ERROR_TYPE>(
 				CR, F,
 				std::move(callback_population_generator),
 				std::move(callback_calc_error),
 				std::move(callback_error_evaluation)) {
 
+		population_.resize(kPopSize_);
+		pop_errors_.resize(kPopSize_);
+		
 		// Initialize random_cr_
 		using namespace std;
 		random_device rd;
@@ -54,7 +59,7 @@ struct SequentialDE : public BaseDE<POP_TYPE, POP_DIM, POP_SIZE, ERROR_TYPE> {
 
   		// Initialize random_trials_
   		mt19937 emt2(rd());
-  		uniform_int_distribution<uint32_t> ui2(0, POP_SIZE-1);
+  		uniform_int_distribution<uint32_t> ui2(0, kPopSize_-1);
   		random_trials_ = bind(ui2, emt2);
 
   		// Initialize random_j_
@@ -71,7 +76,7 @@ struct SequentialDE : public BaseDE<POP_TYPE, POP_DIM, POP_SIZE, ERROR_TYPE> {
 	}
 
 	void solveOneGeneration() {
-		for (uint32_t i = 0; i < POP_SIZE; i++) {
+		for (uint32_t i = 0; i < kPopSize_; i++) {
 			mutation(i);
 			select(i);
 		}
@@ -89,10 +94,7 @@ struct SequentialDE : public BaseDE<POP_TYPE, POP_DIM, POP_SIZE, ERROR_TYPE> {
 			this->callback_error_evaluation_);
 		auto min = std::distance(pop_errors_.begin(), e);
 
-		std::array<POP_TYPE,POP_DIM> r;
-		for (int d = 0; d < POP_DIM; d++) {
-			r[d] = population_[min][d];
-		}
+		std::array<POP_TYPE,POP_DIM> r = population_[min];
 
 		return std::tuple<ERROR_TYPE,std::array<POP_TYPE,POP_DIM>>{pop_errors_[min],r};
 	}
@@ -105,10 +107,10 @@ private:
 
 	Matrix<POP_TYPE, 3, POP_DIM> pop_trials_; // Used in "mutation"
 	std::array<POP_TYPE, POP_DIM> pop_candidate_;
-	std::array<ERROR_TYPE, POP_SIZE> pop_errors_;
+	std::vector<ERROR_TYPE> pop_errors_;
 
 	void generatePopulation() {
-		for (uint32_t i = 0; i < POP_SIZE; ++i) {
+		for (uint32_t i = 0; i < kPopSize_; ++i) {
 			for (int d = 0; d < POP_DIM; ++d) {
 				population_[i][d] = this->callback_population_generator_();
 			}
@@ -116,10 +118,8 @@ private:
 	}
 
 	void calcGenerationError() {
-		for (uint32_t i = 0; i < POP_SIZE; ++i) {
-			for (int d = 0; d < POP_DIM; ++d) {
-				pop_candidate_[d] = population_[i][d];
-			}
+		for (uint32_t i = 0; i < kPopSize_; ++i) {
+			pop_candidate_ = population_[i];
 			pop_errors_[i] = this->callback_calc_error_(pop_candidate_);
 		}
 	}

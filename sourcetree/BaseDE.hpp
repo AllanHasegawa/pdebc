@@ -27,7 +27,7 @@ namespace pdebc {
 template <class T, unsigned I, unsigned J>
 using Matrix = std::array<std::array<T, J>, I>;
 
-template <class POP_TYPE, int POP_DIM, int POP_SIZE, class ERROR_TYPE>
+template <class POP_TYPE, int POP_DIM, class ERROR_TYPE>
 struct BaseDE {
 
 	const double kCR_;

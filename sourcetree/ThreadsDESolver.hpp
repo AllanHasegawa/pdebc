@@ -34,20 +34,25 @@ enum class WorkType {
 	GET_BEST_CANDIDATE
 };
 
-template <class POP_TYPE, int POP_DIM, int POP_SIZE, class ERROR_TYPE>
+template <class POP_TYPE, int POP_DIM, class ERROR_TYPE>
 struct ThreadsDESolver {
 
 	const int kID_;
-	BaseDE<POP_TYPE,POP_DIM,POP_SIZE,ERROR_TYPE>* base_de_;
+	const uint32_t kPopSize_;
+	BaseDE<POP_TYPE,POP_DIM,ERROR_TYPE>* base_de_;
 
-	Matrix<POP_TYPE, POP_SIZE, POP_DIM> population_;
+	std::vector<std::array<POP_TYPE,POP_DIM>> population_;
 
-	ThreadsDESolver(const int id,
-		BaseDE<POP_TYPE,POP_DIM,POP_SIZE,ERROR_TYPE>* base_de)
-		: kID_{id}, base_de_{base_de}, finish_{false}, pending_work_{false},
+	ThreadsDESolver(const int id, const uint32_t POP_SIZE,
+		BaseDE<POP_TYPE,POP_DIM,ERROR_TYPE>* base_de)
+		: kID_{id}, kPopSize_{POP_SIZE},
+			base_de_{base_de}, finish_{false}, pending_work_{false},
 			work_ready_{false} {
 
-		using MyThreadsDESolver = pdebc::ThreadsDESolver<POP_TYPE,POP_DIM,POP_SIZE,ERROR_TYPE>;
+		population_.resize(kPopSize_);
+		pop_errors_.resize(kPopSize_);
+		
+		using MyThreadsDESolver = pdebc::ThreadsDESolver<POP_TYPE,POP_DIM,ERROR_TYPE>;
 		thread_ = std::thread(&MyThreadsDESolver::run,this);
 	}
 	~ThreadsDESolver() {
@@ -94,7 +99,7 @@ private:
 
 	Matrix<POP_TYPE, 3, POP_DIM> pop_trials_; // Used in "mutation"
 	std::array<POP_TYPE, POP_DIM> pop_candidate_;
-	std::array<ERROR_TYPE, POP_SIZE> pop_errors_;
+	std::vector<ERROR_TYPE> pop_errors_;
 
 	std::tuple<ERROR_TYPE,std::array<POP_TYPE,POP_DIM>> best_candidate_;
 
@@ -122,7 +127,7 @@ private:
 			// Initialize random_trials_
 			t1 = chrono::high_resolution_clock::now().time_since_epoch();
 			mt19937 emt2(chrono::duration_cast<chrono::nanoseconds>(t1).count());
-			uniform_int_distribution<uint32_t> ui2(0, POP_SIZE-1);
+			uniform_int_distribution<uint32_t> ui2(0, kPopSize_-1);
 			random_trials_ = bind(ui2, emt2);
 
 			// Initialize random_j_
@@ -147,7 +152,7 @@ private:
 
 
 			if (work_type_ == WorkType::SOLVE_GENERATION) {
-				for (uint32_t i = 0; i < POP_SIZE; ++i) {
+				for (uint32_t i = 0; i < kPopSize_; ++i) {
 					mutation(i);
 					select(i);
 				}
@@ -172,7 +177,7 @@ private:
 	}
 
 	void generatePopulation() {
-		for (uint32_t i = 0; i < POP_SIZE; ++i) {
+		for (uint32_t i = 0; i < kPopSize_; ++i) {
 			for (int d = 0; d < POP_DIM; ++d) {
 				population_[i][d] = base_de_->callback_population_generator_();
 			}
@@ -180,7 +185,7 @@ private:
 	}
 
 	void calcGenerationError() {
-		for (uint32_t i = 0; i < POP_SIZE; ++i) {
+		for (uint32_t i = 0; i < kPopSize_; ++i) {
 			for (int d = 0; d < POP_DIM; ++d) {
 				pop_candidate_[d] = population_[i][d];
 			}
@@ -201,11 +206,9 @@ private:
 			it2 = random_trials_();
 		}
 
-		for (int d = 0; d < POP_DIM; d++) {
-			pop_trials_[0][d] = population_[it0][d];
-			pop_trials_[1][d] = population_[it1][d];
-			pop_trials_[2][d] = population_[it2][d];
-		}
+		pop_trials_[0] = population_[it0];
+		pop_trials_[1] = population_[it1];
+		pop_trials_[2] = population_[it2];
 
 		pop_candidate_[j] = pop_trials_[0][j] + base_de_->kF_ * (pop_trials_[1][j] - pop_trials_[2][j]);
 		j = (j + 1) % POP_DIM;

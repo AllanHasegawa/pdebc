@@ -28,19 +28,20 @@
 
 namespace pdebc {
 
-template <class POP_TYPE, int POP_DIM, int POP_SIZE, class ERROR_TYPE>
-struct ThreadsDE : public BaseDE<POP_TYPE, POP_DIM, POP_SIZE, ERROR_TYPE> {
+template <class POP_TYPE, int POP_DIM, class ERROR_TYPE>
+struct ThreadsDE : public BaseDE<POP_TYPE, POP_DIM, ERROR_TYPE> {
 
 	const uint32_t kNProcess_;
 	const double kMigrationPhi_;
+	const uint32_t kPopSize_;
 
 	ThreadsDE(const uint32_t n_process, const double migration_phi,
-		const double CR, const double F,
+		const uint32_t POP_SIZE, const double CR, const double F,
 		const std::function<POP_TYPE()>&& callback_population_generator,
 		const std::function<ERROR_TYPE(const std::array<POP_TYPE,POP_DIM>&)>&& callback_calc_error,
 		const std::function<bool(const ERROR_TYPE&,const ERROR_TYPE&)>&& callback_error_evaluation) :
-			kNProcess_{n_process}, kMigrationPhi_{migration_phi},
-			BaseDE<POP_TYPE, POP_DIM, POP_SIZE, ERROR_TYPE>(
+			kNProcess_{n_process}, kMigrationPhi_{migration_phi},kPopSize_{POP_SIZE},
+			BaseDE<POP_TYPE, POP_DIM, ERROR_TYPE>(
 				CR, F,
 				std::move(callback_population_generator),
 				std::move(callback_calc_error),
@@ -56,13 +57,13 @@ struct ThreadsDE : public BaseDE<POP_TYPE, POP_DIM, POP_SIZE, ERROR_TYPE> {
 
 		t1 = chrono::high_resolution_clock::now().time_since_epoch();
 		mt19937 emt2(chrono::duration_cast<chrono::nanoseconds>(t1).count());
-		uniform_int_distribution<uint32_t> ui2(0, POP_SIZE-1);
+		uniform_int_distribution<uint32_t> ui2(0, (kPopSize_/kNProcess_)-1);
 		random_migration_index_ = bind(ui2, emt2);
 
 		// Initialize each solver...
-  		using MyThreadsDESolver = pdebc::ThreadsDESolver<POP_TYPE,POP_DIM,POP_SIZE,ERROR_TYPE>;
+  		using MyThreadsDESolver = pdebc::ThreadsDESolver<POP_TYPE,POP_DIM,ERROR_TYPE>;
 		for (int k = 0; k < kNProcess_; k++) {
-			auto solver = shared_ptr<MyThreadsDESolver>(new MyThreadsDESolver(k,this));
+			auto solver = shared_ptr<MyThreadsDESolver>(new MyThreadsDESolver(k,kPopSize_/kNProcess_,this));
 			solvers_.push_back(solver);
 		}
 	}
@@ -96,7 +97,7 @@ struct ThreadsDE : public BaseDE<POP_TYPE, POP_DIM, POP_SIZE, ERROR_TYPE> {
 		solvers_[0]->waitWork();
 		double min_error = get<0>(solvers_[0]->getBestCandidate());
 		array<POP_TYPE,POP_DIM> min_error_pos = get<1>(solvers_[0]->getBestCandidate());;
-		/*
+		
 		for (auto& s : solvers_) {
 			s->waitWork();
 			auto bc = s->getBestCandidate();
@@ -104,7 +105,7 @@ struct ThreadsDE : public BaseDE<POP_TYPE, POP_DIM, POP_SIZE, ERROR_TYPE> {
 				min_error = get<0>(bc);
 				min_error_pos = get<1>(bc);
 			}
-		}*/
+		}
 
 		return std::tuple<ERROR_TYPE,std::array<POP_TYPE,POP_DIM>>{min_error,min_error_pos};
 	}
@@ -112,7 +113,7 @@ struct ThreadsDE : public BaseDE<POP_TYPE, POP_DIM, POP_SIZE, ERROR_TYPE> {
 private:
 	std::function<double()> random_phi_;
 	std::function<uint32_t()> random_migration_index_;
-	std::vector<std::shared_ptr<ThreadsDESolver<POP_TYPE,POP_DIM,POP_SIZE,ERROR_TYPE>>> solvers_;
+	std::vector<std::shared_ptr<ThreadsDESolver<POP_TYPE,POP_DIM,ERROR_TYPE>>> solvers_;
 
 	// new step for the parallel solution ;)
 	void migration() {

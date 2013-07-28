@@ -55,9 +55,6 @@ int main(int argc, char *argv[]) {
   uniform_real_distribution<POPULATION_TYPE> ud(-DOMAIN_LIMITS, +DOMAIN_LIMITS);
   auto rand_domain = bind(ud, emt);
 
-  uniform_int_distribution<uint32_t> up(0,POPULATION_SIZE);
-  auto rand_pop = bind(up, emt);
-
   auto calc_error = [](const std::array<POPULATION_TYPE, POPULATION_DIM>& arr) -> ERROR_TYPE {
     double e = std::sqrt(
       std::pow(arr[0]-POINT[0],2) +
@@ -71,19 +68,15 @@ int main(int argc, char *argv[]) {
     return a < b;
   };
   
-
-  SequentialDE<POPULATION_TYPE,POPULATION_DIM,POPULATION_SIZE,ERROR_TYPE> de {
-    0.5, 0.8,
+  SequentialDE<POPULATION_TYPE,POPULATION_DIM,ERROR_TYPE> de {
+    POPULATION_SIZE, 0.5, 0.8,
     std::move(rand_domain), //std::function<POP_TYPE()>&& callback_population_generator
-    std::move(rand_pop), //std::function<uint32_t()>&& callback_population_picker
     std::move(calc_error), //std::function<ERROR_TYPE(const std::array<POP_TYPE,POP_DIM>&)>&& callback_calc_error
     std::move(error_evaluation) //std::function<bool(const ERROR_TYPE&,const ERROR_TYPE&)>&& callback_error_evaluation)
   };
 
   
-  for (int i = 0; i < 20; i++) {
-    de.solveOneGeneration();
-  }
+  de.solveNGenerations(10);
 
   auto bc_error = get<0>(de.getBestCandidate());
   auto bc_point = get<1>(de.getBestCandidate());

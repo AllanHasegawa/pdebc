@@ -35,7 +35,8 @@ std::vector<double> calcChordLengthSwig(const std::vector<Vec2d>& data_points) {
 	return chord_length;
 }
 
-pypde::pypde(const int n_processes, const int bezier_control_points,
+pypde::pypde(const int n_processes, const int population_size,
+		const int bezier_control_points,
 		std::vector<Vec2> data_points) {
 	using namespace std;
 	vector<Vec2d> data_points_2dpos;
@@ -75,7 +76,7 @@ pypde::pypde(const int n_processes, const int bezier_control_points,
 			[](const ERROR_TYPE& a, const ERROR_TYPE& b) {
 				return a < b;
 		};
-
+		
 		// error calculation
 		auto calc_error =
 			[this,i](const array<POPULATION_TYPE, POPULATION_DIM>& arr) -> ERROR_TYPE {
@@ -84,7 +85,7 @@ pypde::pypde(const int n_processes, const int bezier_control_points,
 		
 		
 		des_.push_back(make_shared<PYPDE_ThreadsDE>(
-			n_processes, 1, 0.5, 0.8,
+			n_processes, 1, population_size, 0.5, 0.8,
 			std::move(rand_domain),
 			std::move(calc_error),
 			std::move(error_evaluation)
