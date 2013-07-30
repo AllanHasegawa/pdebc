@@ -30,12 +30,37 @@
 
 namespace pdebc {
 
+//! Sequential implementation of the Differential Evolution algorithm.
+/*!
+	\tparam POP_TYPE Population data type (usually 'double')
+	\tparam POP_DIM Population dimensions (usually 2D or 3D)
+	\tparam ERROR_TYPE Error type (usually 'double')
+*/
 template <class POP_TYPE, int POP_DIM, class ERROR_TYPE>
 struct SequentialDE : public BaseDE<POP_TYPE, POP_DIM, ERROR_TYPE> {
 
-	const uint32_t kPopSize_;
-	std::vector<std::array<POP_TYPE,POP_DIM>> population_;
+	const uint32_t kPopSize_; ///< Population size;
+	std::vector<std::array<POP_TYPE,POP_DIM>> population_; ///< Entire population.
 
+	/*!
+		\param POP_SIZE Population size.
+
+		\param CR Mutation rate. Determines the chances
+			of a mutation happening. This value must be 
+			between [0,1].
+		\param F Mutation weight. Determines how much
+			the mutation impacts each trials. This value
+			should be between [0,1].
+		\param callback_population_generator Function used to generate each
+			entity of the population. It must return a POP_TYPE type and use no
+			parameters.
+		\param callback_calc_error Function used to calculate the error with a single
+			member of the population. It must return a ERROR_TYPE type and takes an
+			array containg a single population entity as input parameter.
+		\param callback_error_evaluation Fuction used to compare two ERROR_TYPE. It
+			must return a bool. In case of true, the population from the first ERROR_TYPE
+			will be picked as best candidate. Try to figure out what happens in case of false xD.
+	*/
 	SequentialDE(const uint32_t POP_SIZE, const double CR, const double F,
 		const std::function<POP_TYPE()>&& callback_population_generator,
 		const std::function<ERROR_TYPE(const std::array<POP_TYPE,POP_DIM>&)>&& callback_calc_error,
@@ -88,6 +113,9 @@ struct SequentialDE : public BaseDE<POP_TYPE, POP_DIM, ERROR_TYPE> {
 		}
 	}
 
+	/*!
+		This operation has an O(N) complexity, where N is the population size.
+	*/
 	std::tuple<ERROR_TYPE,std::array<POP_TYPE,POP_DIM>> getBestCandidate() {
 		
 		auto e = std::min_element(pop_errors_.begin(), pop_errors_.end(),

@@ -27,6 +27,7 @@
  
 #include "BaseDE.hpp"
 
+/// \cond DEV
 namespace pdebc {
 
 enum class WorkType {
@@ -34,6 +35,11 @@ enum class WorkType {
 	GET_BEST_CANDIDATE
 };
 
+
+//! ThreadsDE internal class.
+/*!
+	This class is used by ThreadsDE privately, so, Doxygen will ignore it :3
+*/
 template <class POP_TYPE, int POP_DIM, class ERROR_TYPE>
 struct ThreadsDESolver {
 
@@ -237,5 +243,6 @@ private:
 };
 
 };
+/// \endcond
 
  #endif /* THREADSDESOLVER_H_ */

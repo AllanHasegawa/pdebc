@@ -22,21 +22,54 @@
 #include <functional>
 #include <tuple>
 
+//! pdebc namespace
+/*!
+	Every class in the pdebc library belongs in the namespace pdebc.
+*/
 namespace pdebc {
 
-template <class T, unsigned I, unsigned J>
-using Matrix = std::array<std::array<T, J>, I>;
+//! Abstract/base class for every Differential Evolution class.
+/*!
+	BaseDE offers a generic interface for any DE class.
+	It's main methods are made public, and are overriden by
+	its childrens.
+	It's use is optional. The usage of a children class directly is allowed.
 
+	\tparam POP_TYPE Population data type (usually 'double')
+	\tparam POP_DIM Population dimensions (usually 2D or 3D)
+	\tparam ERROR_TYPE Error type (usually 'double')
+*/
 template <class POP_TYPE, int POP_DIM, class ERROR_TYPE>
 struct BaseDE {
 
-	const double kCR_;
-	const double kF_;
+	const double kCR_; ///< Mutation rate.
+	const double kF_; ///< Mutation weight.
 
-	const std::function<POP_TYPE()> callback_population_generator_;
-	const std::function<ERROR_TYPE(const std::array<POP_TYPE,POP_DIM>&)> callback_calc_error_;
-	const std::function<bool(const ERROR_TYPE&,const ERROR_TYPE&)> callback_error_evaluation_;
+	const std::function<POP_TYPE()>
+		callback_population_generator_; ///< Callback for the population generator function.
+	const std::function<ERROR_TYPE(const std::array<POP_TYPE,POP_DIM>&)>
+		callback_calc_error_; ///< Callback for the error calculator function.
+	const std::function<bool(const ERROR_TYPE&,const ERROR_TYPE&)>
+		callback_error_evaluation_; ///< Callback for the error evaluator function.
 
+	//! BaseDE constructor
+	/*!
+		\param CR Mutation rate. Determines the chances
+			of a mutation happening. This value must be 
+			between [0,1].
+		\param F Mutation weight. Determines how much
+			the mutation impacts each trials. This value
+			should be between [0,1].
+		\param callback_population_generator Function used to generate each
+			entity of the population. It must return a POP_TYPE type and use no
+			parameters.
+		\param callback_calc_error Function used to calculate the error with a single
+			member of the population. It must return a ERROR_TYPE type and takes an
+			array containg a single population entity as input parameter.
+		\param callback_error_evaluation Fuction used to compare two ERROR_TYPE. It
+			must return a bool. In case of true, the population from the first ERROR_TYPE
+			will be picked as best candidate. Try to figure out what happens in case of false xD.
+	*/
 	BaseDE(const double CR, const double F,
 		const std::function<POP_TYPE()>&& callback_population_generator,
 		const std::function<ERROR_TYPE(const std::array<POP_TYPE,POP_DIM>&)>&& callback_calc_error,
@@ -48,8 +81,21 @@ struct BaseDE {
 
 	}
 
+	//! It solves one generation.
+	/*!
+		This is a blocking method.
+	*/
 	virtual void solveOneGeneration() = 0;
+	//! It solves `N` generations.
+	/*!
+		\param N Number of generations to solve.
+	*/
 	virtual void solveNGenerations(const uint32_t N) = 0;
+	//! It gets the best candidate.
+	/*!
+		Will go through the entire population looking for the best candidate.
+		The choice is based on the results of the BaseDE::callback_calc_error_ function.
+	*/
 	virtual std::tuple<ERROR_TYPE,std::array<POP_TYPE,POP_DIM>> getBestCandidate() = 0;
 
 protected:
