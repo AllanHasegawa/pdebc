@@ -133,6 +133,9 @@ private:
 	std::function<uint32_t()> random_trials_;
 	std::function<uint32_t()> random_j_;
 
+	template <class T, unsigned I, unsigned J>
+	using Matrix = std::array<std::array<T, J>, I>;
+
 	Matrix<POP_TYPE, 3, POP_DIM> pop_trials_; // Used in "mutation"
 	std::array<POP_TYPE, POP_DIM> pop_candidate_;
 	std::vector<ERROR_TYPE> pop_errors_;
