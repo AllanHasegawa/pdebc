@@ -58,7 +58,8 @@ struct ThreadsDESolver {
 		population_.resize(kPopSize_);
 		pop_errors_.resize(kPopSize_);
 		
-		using MyThreadsDESolver = pdebc::ThreadsDESolver<POP_TYPE,POP_DIM,ERROR_TYPE>;
+		using MyThreadsDESolver =
+			pdebc::ThreadsDESolver<POP_TYPE,POP_DIM,ERROR_TYPE>;
 		thread_ = std::thread(&MyThreadsDESolver::run,this);
 	}
 	~ThreadsDESolver() {
@@ -200,7 +201,8 @@ private:
 			for (int d = 0; d < POP_DIM; ++d) {
 				pop_candidate_[d] = population_[i][d];
 			}
-			pop_errors_[i] = base_de_->callback_calc_error_(pop_candidate_);
+			pop_errors_[i] = 
+				base_de_->callback_calc_error_(pop_candidate_);
 		}
 	}
 
