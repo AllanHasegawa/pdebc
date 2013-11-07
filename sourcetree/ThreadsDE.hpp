@@ -82,13 +82,11 @@ struct ThreadsDE : public BaseDE<POP_TYPE, POP_DIM, ERROR_TYPE> {
 		// Initialize random functions for the
 		// migration step...
 		using namespace std;
-		auto t1 = chrono::high_resolution_clock::now().time_since_epoch();
-		mt19937 emt(chrono::duration_cast<chrono::nanoseconds>(t1).count());
+		mt19937 emt(random_device{}());
 		uniform_real_distribution<double> ud(0.0, 1.0);
 		random_phi_ = bind(ud, emt);
 
-		t1 = chrono::high_resolution_clock::now().time_since_epoch();
-		mt19937 emt2(chrono::duration_cast<chrono::nanoseconds>(t1).count());
+		mt19937 emt2(random_device{}());
 		uniform_int_distribution<uint32_t> ui2(0, (kPopSize_/kNProcess_)-1);
 		random_migration_index_ = bind(ui2, emt2);
 

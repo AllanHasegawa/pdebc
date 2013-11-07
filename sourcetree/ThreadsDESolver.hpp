@@ -103,7 +103,11 @@ private:
 	std::function<uint32_t()> random_trials_;
 	std::function<uint32_t()> random_j_;
 
+	template <class T, unsigned I, unsigned J>
+	using Matrix = std::array<std::array<T, J>, I>;
+
 	Matrix<POP_TYPE, 3, POP_DIM> pop_trials_; // Used in "mutation"
+
 	std::array<POP_TYPE, POP_DIM> pop_candidate_;
 	std::vector<ERROR_TYPE> pop_errors_;
 
@@ -125,20 +129,17 @@ private:
 		using namespace std;
 		{ // this scope will be called only once
 			// Initialize random_cr_
-			auto t1 = chrono::high_resolution_clock::now().time_since_epoch();
-			mt19937 emt(chrono::duration_cast<chrono::nanoseconds>(t1).count());
+			mt19937 emt(random_device{}());
 			uniform_real_distribution<double> ud(0.0, 1.0);
 			random_cr_ = bind(ud, emt);
 
 			// Initialize random_trials_
-			t1 = chrono::high_resolution_clock::now().time_since_epoch();
-			mt19937 emt2(chrono::duration_cast<chrono::nanoseconds>(t1).count());
+			mt19937 emt2(random_device{}());
 			uniform_int_distribution<uint32_t> ui2(0, kPopSize_-1);
 			random_trials_ = bind(ui2, emt2);
 
 			// Initialize random_j_
-			t1 = chrono::high_resolution_clock::now().time_since_epoch();
-			mt19937 emt3(chrono::duration_cast<chrono::nanoseconds>(t1).count());
+			mt19937 emt3(random_device{}());
 			uniform_int_distribution<uint32_t> ui3(0, POP_DIM-1);
 			random_j_ = bind(ui3, emt3);
 
@@ -149,7 +150,9 @@ private:
 		while (!finish_) {
 			// non-busy wait for more work
 			unique_lock<mutex> lock(mutex_);
-			cond_.wait(lock, [this]() {return this->pending_work_;});
+			cond_.wait(lock, [this]() {
+				return this->pending_work_;
+			});
 			lock.unlock();
 
 			if (finish_) {
@@ -163,13 +166,14 @@ private:
 					select(i);
 				}
 			} else if (work_type_ == WorkType::GET_BEST_CANDIDATE) {
-				auto e = std::min_element(pop_errors_.begin(), pop_errors_.end(),
-				base_de_->callback_error_evaluation_);
-				auto min = std::distance(pop_errors_.begin(), e);
+				auto e = std::min_element(pop_errors_.begin(),
+					pop_errors_.end(),
+					base_de_->callback_error_evaluation_);
 
+				auto min = std::distance(pop_errors_.begin(), e);
 				std::array<POP_TYPE,POP_DIM> r = population_[min];
 
-				best_candidate_ = std::tuple<ERROR_TYPE,std::array<POP_TYPE,POP_DIM>>{pop_errors_[min],r};
+				best_candidate_ = make_tuple(pop_errors_[min],r);
 			}
 
 
@@ -185,7 +189,8 @@ private:
 	void generatePopulation() {
 		for (uint32_t i = 0; i < kPopSize_; ++i) {
 			for (int d = 0; d < POP_DIM; ++d) {
-				population_[i][d] = base_de_->callback_population_generator_();
+				population_[i][d] =
+					base_de_->callback_population_generator_();
 			}
 		}
 	}
