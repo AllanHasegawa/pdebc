@@ -221,12 +221,15 @@ private:
 		pop_trials_[1] = population_[it1];
 		pop_trials_[2] = population_[it2];
 
-		pop_candidate_[j] = pop_trials_[0][j] + base_de_->kF_ * (pop_trials_[1][j] - pop_trials_[2][j]);
+		pop_candidate_[j] = pop_trials_[0][j] + base_de_->kF_
+			* (pop_trials_[1][j] - pop_trials_[2][j]);
 		j = (j + 1) % POP_DIM;
 
 		for (int k = 1; k < POP_DIM; ++k) {
 			if (random_cr_() <= base_de_->kCR_) {
-				pop_candidate_[j] = pop_trials_[0][j] + base_de_->kF_ * (pop_trials_[1][j] - pop_trials_[2][j]);
+				pop_candidate_[j] = pop_trials_[0][j]
+					+ base_de_->kF_ * (pop_trials_[1][j]
+					- pop_trials_[2][j]);
 		    } else {
 		      	pop_candidate_[j] = population_[actual_index][j];
 		    }
@@ -236,11 +239,14 @@ private:
 	
 
 	void select(const uint32_t actual_index) {
-		ERROR_TYPE error_new = base_de_->callback_calc_error_(pop_candidate_);
+		ERROR_TYPE error_new = base_de_->callback_calc_error_(
+				pop_candidate_);
 
-		if (base_de_->callback_error_evaluation_(error_new, pop_errors_[actual_index])) {
+		if (base_de_->callback_error_evaluation_(
+				error_new, pop_errors_[actual_index])) {
 			for (int d = 0; d < POP_DIM; d++) {
-				population_[actual_index][d] = pop_candidate_[d];
+				population_[actual_index][d] =
+					pop_candidate_[d];
 			}
 			pop_errors_[actual_index] = error_new;
 		}
